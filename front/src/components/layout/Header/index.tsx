@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { AppBar, Box, Container, Typography, Button, Popper, Paper, ClickAwayListener } from '@mui/material';
+import { AppBar, Box, Container, Typography, Button, Popper, Paper, ClickAwayListener, Stack, styled } from '@mui/material';
 import Link from 'next/link';
 
+// 메뉴 데이터
 const menuItems = [
   {
     title: '교육 커리큘럼',
@@ -40,6 +41,101 @@ const menuItems = [
   }
 ];
 
+// 스타일드 컴포넌트
+const StyledLink = styled(Link)(({ theme }) => ({
+  textDecoration: 'none',
+  color: 'inherit',
+}));
+
+const MenuItemBox = styled(Box)(({ theme }) => ({
+  padding: theme.spacing(1, 2),
+  cursor: 'pointer',
+  fontSize: '13px',
+  '&:hover': {
+    backgroundColor: '#1891E0',
+    color: '#fff',
+  }
+}));
+
+// 서브 컴포넌트: 로고
+const Logo = () => (
+  <StyledLink href="/">
+    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+      <Typography variant="h6" component="span" sx={{ color: '#E53E3E', fontWeight: 'bold' }}>
+        AI Maker
+      </Typography>
+      <Typography variant="h6" component="span" sx={{ ml: 1 }}>
+        Lab
+      </Typography>
+    </Box>
+  </StyledLink>
+);
+
+// 서브 컴포넌트: 메뉴 아이템
+interface MenuItemProps {
+  menu: {
+    title: string;
+    items: { name: string; link: string }[];
+  };
+  index: number;
+  openMenuIndex: number | null;
+  anchorEl: HTMLElement | null;
+  handleMenuClick: (event: React.MouseEvent<HTMLElement>, index: number) => void;
+  handleMenuEnter: (event: React.MouseEvent<HTMLElement>, index: number) => void;
+  handleClose: () => void;
+}
+
+const MenuItem = ({ 
+  menu, 
+  index, 
+  openMenuIndex, 
+  anchorEl, 
+  handleMenuClick, 
+  handleMenuEnter, 
+  handleClose 
+}: MenuItemProps) => (
+  <Box 
+    onMouseEnter={(e) => handleMenuEnter(e, index)}
+    sx={{ position: 'relative' }}
+  >
+    <Button 
+      color="inherit"
+      sx={{ fontWeight: 'bold' }}
+      onClick={(e) => handleMenuClick(e, index)}
+    >
+      {menu.title}
+    </Button>
+    <Popper
+      open={openMenuIndex === index}
+      anchorEl={anchorEl}
+      placement="bottom-start"
+      sx={{ zIndex: 1001, minWidth: '140px' }}
+    >
+      <ClickAwayListener onClickAway={handleClose}>
+        <Paper 
+          elevation={3}
+          sx={{ 
+            mt: 2,
+            borderRadius: '5px',
+          }}
+        >
+          {menu.items.map((item, itemIndex) => (
+            <StyledLink
+              key={itemIndex}
+              href={item.link}
+            >
+              <MenuItemBox>
+                {item.name}
+              </MenuItemBox>
+            </StyledLink>
+          ))}
+        </Paper>
+      </ClickAwayListener>
+    </Popper>
+  </Box>
+);
+
+// 메인 컴포넌트
 export default function Header() {
   const [openMenuIndex, setOpenMenuIndex] = useState<number | null>(null);
   const [anchorEls, setAnchorEls] = useState<(HTMLElement | null)[]>(new Array(menuItems.length).fill(null));
@@ -67,76 +163,26 @@ export default function Header() {
   };
 
   return (
-    <AppBar position="sticky" color="default" elevation={1} className="relative z-[1000]">
+    <AppBar position="sticky" color="default" elevation={1} sx={{ position: 'relative', zIndex: 1000 }}>
       <Container maxWidth="lg">
-        <Box className="flex items-center justify-between py-2">
-          <Link href="/" className="no-underline">
-            <Box className="flex items-center">
-              <Typography variant="h6" component="span" className="text-red-600 font-bold">
-                AI Maker
-              </Typography>
-              <Typography variant="h6" component="span" className="ml-1">
-                Lab
-              </Typography>
-            </Box>
-          </Link>
-
-          <Box className="flex space-x-10">
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 2 }}>
+          <Logo />
+          
+          <Stack direction="row" spacing={10}>
             {menuItems.map((menu, index) => (
-              <Box 
-                key={index} 
-                onMouseEnter={(e) => handleMenuEnter(e, index)}
-                className="relative"
-              >
-                <Button 
-                  color="inherit"
-                  onClick={(e) => handleMenuClick(e, index)}
-                  className="z-10"
-                >
-                  {menu.title}
-                </Button>
-                <Popper
-                  open={openMenuIndex === index}
-                  anchorEl={anchorEls[index]}
-                  placement="bottom-start"
-                  className="z-[1001]"
-                  style={{ minWidth: '140px' }}
-                >
-                  <ClickAwayListener onClickAway={handleClose}>
-                    <Paper 
-                      elevation={3}
-                      className="mt-2"
-                      sx={{
-                        borderRadius: '5px', 
-                      }}
-                    >
-                      {menu.items.map((item, itemIndex) => (
-                        <Link
-                          key={itemIndex}
-                          href={item.link}
-                          className="no-underline text-inherit block"
-                        >
-                          <Box
-                            className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-gray-700"
-                            sx={{                              
-                              fontSize: '13px', 
-                              '&:hover': {
-                                backgroundColor: '#1891E0',
-                                color: '#fff'                                
-                              }
-                            }}
-                          >
-                            {item.name}
-                          </Box>
-                        </Link>
-                      ))}
-                    </Paper>
-                  </ClickAwayListener>
-                </Popper>
-              </Box>
+              <MenuItem 
+                key={index}
+                menu={menu}
+                index={index}
+                openMenuIndex={openMenuIndex}
+                anchorEl={anchorEls[index]}
+                handleMenuClick={handleMenuClick}
+                handleMenuEnter={handleMenuEnter}
+                handleClose={handleClose}
+              />
             ))}
-            <Button color="inherit" sx={{ ml: 10  }}>로그인</Button>
-          </Box>
+            <Button color="inherit" sx={{ ml: 10, fontWeight: 'bold' }}>로그인</Button>
+          </Stack>
         </Box>
       </Container>
     </AppBar>

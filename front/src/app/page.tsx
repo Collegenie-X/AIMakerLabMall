@@ -1,35 +1,10 @@
 import { Box, Container, Typography } from "@mui/material";
 import HeroBanner from "@/components/domain/HeroBanner";
-import MegaMenu from "@/components/domain/MegaMenu";
+import MenuShortcuts from "@/components/domain/MenuShortcuts";
+import { getSlides } from "@/services/slidesService";
 import ProductGrid from "@/components/domain/ProductGrid";
 
-// 임시 데이터
-const slides = [
-  {
-    imageUrl: "/images/hero1.jpg",
-    title: "AI Maker Lab",
-    subtitle: "중·고등학생, 고입을 준비하는 학생들을 위한 AI 자율주행봇"
-  }
-];
-
-const menuSections = [
-  {
-    title: "교육 커리큘럼",
-    items: [
-      { name: "초등학교", link: "/education/elementary" },
-      { name: "중학교", link: "/education/middle" },
-      { name: "고등학교", link: "/education/high" }
-    ]
-  },
-  {
-    title: "수업 정보",
-    items: [
-      { name: "수업 진도", link: "/education/progress" },
-      { name: "교육 자료", link: "/education/materials" }
-    ]
-  }
-];
-
+// 임시 제품 데이터
 const products = [
   {
     id: "1",
@@ -54,18 +29,21 @@ const products = [
   }
 ];
 
-export default function Home() {
+export default async function Home() {
+  // 실제 API에서 슬라이드 데이터 가져오기
+  const slides = await getSlides();
+  
   return (
     <Box>
+      {/* 슬라이드 이미지 배너 */}
       <HeroBanner slides={slides} />
       
-      <Container maxWidth="lg" className="py-8">
-        <Box className="mb-12">
-          <MegaMenu sections={menuSections} />
-        </Box>
-
-        <Box className="mb-12">
-          <Typography variant="h4" className="mb-6">
+      {/* 메뉴 바로가기 */}
+      <MenuShortcuts />
+      
+      <Container maxWidth="lg" sx={{ py: 8 }}>
+        <Box sx={{ mb: 12 }}>
+          <Typography variant="h4" sx={{ mb: 6 }}>
             추천 교육 키트
           </Typography>
           <ProductGrid products={products} />
