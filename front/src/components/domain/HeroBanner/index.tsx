@@ -80,22 +80,32 @@ const IndicatorsContainer = styled(Box)(({ theme }) => ({
   zIndex: 2,
 }));
 
-const Indicator = styled(Box)<{ active: boolean }>(({ theme, active }) => ({
-  width: active ? '24px' : '8px',
-  height: '8px',
-  margin: '0 5px',
-  borderRadius: active ? '4px' : '50%',
-  backgroundColor: active ? theme.palette.primary.main : 'rgba(255, 255, 255, 0.5)',
-  cursor: 'pointer',
-  transition: 'all 0.3s ease',
-}));
+interface IndicatorProps {
+  isActive: boolean;
+  onClick: () => void;
+}
+
+const IndicatorBox = ({ isActive, onClick }: IndicatorProps) => (
+  <Box
+    onClick={onClick}
+    sx={{
+      width: isActive ? '24px' : '8px',
+      height: '8px',
+      margin: '0 5px',
+      borderRadius: isActive ? '4px' : '50%',
+      backgroundColor: isActive ? 'primary.main' : 'rgba(255, 255, 255, 0.5)',
+      cursor: 'pointer',
+      transition: 'all 0.3s ease',
+    }}
+  />
+);
 
 interface HeroBannerProps {
-  slides: Slide[];
+  initialSlides: Slide[];
   autoPlayInterval?: number;
 }
 
-export default function HeroBanner({ slides, autoPlayInterval = 5000 }: HeroBannerProps) {
+export default function HeroBanner({ initialSlides: slides, autoPlayInterval = 5000 }: HeroBannerProps) {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
 
@@ -178,9 +188,9 @@ export default function HeroBanner({ slides, autoPlayInterval = 5000 }: HeroBann
           
           <IndicatorsContainer>
             {slides.map((_, index) => (
-              <Indicator 
-                key={index} 
-                active={index === currentSlide}
+              <IndicatorBox
+                key={index}
+                isActive={index === currentSlide}
                 onClick={() => handleIndicatorClick(index)}
               />
             ))}

@@ -1,23 +1,27 @@
 'use client';
 
-import { Grid, Card, CardMedia, CardContent, Typography, Box, styled } from '@mui/material';
+import { Box, Card, CardMedia, CardContent, Typography, styled, Chip } from '@mui/material';
 import Link from 'next/link';
 
 interface Product {
   id: string;
   name: string;
-  description: string;
+  description?: string;
   imageUrl: string;
   price: number;
+  category?: string;
+  duration?: string;
 }
 
 interface ProductGridProps {
   products: Product[];
+  columns?: number;
 }
 
 const StyledLink = styled(Link)({
   textDecoration: 'none',
   color: 'inherit',
+  display: 'block',
 });
 
 const ProductCard = styled(Card)(({ theme }) => ({
@@ -25,59 +29,88 @@ const ProductCard = styled(Card)(({ theme }) => ({
   display: 'flex',
   flexDirection: 'column',
   transition: 'transform 0.3s, box-shadow 0.3s',
+  borderRadius: theme.shape.borderRadius,
+  overflow: 'hidden',
   '&:hover': {
-    transform: 'translateY(-8px)',
-    boxShadow: theme.shadows[4],
+    transform: 'translateY(-5px)',
+    boxShadow: theme.shadows[2],
   }
 }));
 
 const ProductCardMedia = styled(CardMedia)({
-  paddingTop: '75%', // 4:3 비율
-  backgroundSize: 'contain',
+  height: 250,
+  width: 250,
+  backgroundSize: 'cover',
   backgroundPosition: 'center',
+  borderRadius: 10, 
+  border: '1px solid #ddd', 
 });
 
-const PriceText = styled(Typography)(({ theme }) => ({
-  color: theme.palette.primary.main,
-  fontWeight: 'bold',
-  marginTop: theme.spacing(1)
+const CategoryChip = styled(Chip)(({ theme }) => ({
+  position: 'absolute',
+  top: 10,
+  left: 10,
+  backgroundColor: theme.palette.common.black,
+  color: theme.palette.common.white,
+  fontSize: '0.75rem',
+  height: 24,
 }));
 
-export default function ProductGrid({ products }: ProductGridProps) {
-  // 가격을 한국 원화 형식으로 포맷팅하는 함수
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('ko-KR', { 
-      style: 'currency', 
-      currency: 'KRW',
-      maximumFractionDigits: 0
-    }).format(price);
-  };
+const ProductTitle = styled(Typography)(({ theme }) => ({
+  fontWeight: 'bold',
+  marginBottom: theme.spacing(1),
+  display: '-webkit-box',
+  WebkitLineClamp: 2,
+  WebkitBoxOrient: 'vertical',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+}));
 
+const DurationText = styled(Typography)(({ theme }) => ({
+  color: theme.palette.primary.main,
+  fontSize: '0.875rem',
+  fontWeight: 'bold',
+}));
+
+const GridContainer = styled(Box)(({ theme }) => ({
+  display: 'grid',
+  gap: theme.spacing(3),
+}));
+
+export default function ProductGrid({ products, columns = 3 }: ProductGridProps) {
   return (
-    <Grid container spacing={4}>
+    <GridContainer sx={{ 
+      gridTemplateColumns: {
+        xs: '1fr',
+        sm: '1fr 1fr',
+        md: `repeat(${columns}, 1fr)`
+      }
+    }}>
       {products.map((product) => (
-        <Grid item key={product.id} xs={12} sm={6} md={4}>
-          <StyledLink href={`/products/${product.id}`}>
-            <ProductCard>
+        <StyledLink key={product.id} href={`/products/${product.id}`}>
+          <ProductCard elevation={0}>
+            <Box sx={{ position: 'relative' }}>
               <ProductCardMedia
                 image={product.imageUrl}
                 title={product.name}
               />
-              <CardContent>
-                <Typography variant="h6" component="h3" gutterBottom>
-                  {product.name}
-                </Typography>
-                <Typography variant="body2" color="text.secondary" paragraph>
-                  {product.description}
-                </Typography>
-                <PriceText variant="h6">
-                  {formatPrice(product.price)}
-                </PriceText>
-              </CardContent>
-            </ProductCard>
-          </StyledLink>
-        </Grid>
+              {product.category && (
+                <CategoryChip label={product.category} size="small" />
+              )}
+            </Box>
+            <CardContent>
+              <ProductTitle variant="subtitle1">
+                {product.name}
+              </ProductTitle>
+              {product.duration && (
+                <DurationText>
+                  수업시간: {product.duration}
+                </DurationText>
+              )}
+            </CardContent>
+          </ProductCard>
+        </StyledLink>
       ))}
-    </Grid>
+    </GridContainer>
   );
 } 

@@ -1,0 +1,122 @@
+'use client';
+
+import { Box , Container} from "@mui/material";
+import HeroBanner from "@/components/domain/HeroBanner";
+import MenuShortcuts from "@/components/domain/MenuShortcuts";
+import ProductSection from "@/components/layout/ProductSection";
+import BoardList from "@/components/domain/Board/BoardList";
+import Statistics from "@/components/domain/Statistics";
+import Reference from "@/components/domain/Reference";
+import { Slide } from "@/services/slidesService";
+
+// 카테고리 링크
+const categoryLinks = [
+  { label: "수업자료 보기", url: "/resources" },
+  { label: "지도 계획서 보기", url: "/plans" },
+  { label: "소스 코드 다운로드", url: "/downloads" }
+];
+
+// 임시 제품 데이터
+const products = [
+  {
+    id: "1",
+    name: "언플러그드 DIY 컴퓨터 만들기",
+    imageUrl: "/images/product1.jpg",
+    price: 299000,
+    category: "초등학교추천",
+    duration: "2~3차시"
+  },
+  {
+    id: "2",
+    name: "언플러그드 DIY 컴퓨터 만들기",
+    imageUrl: "/images/product1.jpg",
+    price: 299000,
+    category: "초등학교추천",
+    duration: "2~3차시"
+  },
+  {
+    id: "3",
+    name: "언플러그드 DIY 컴퓨터 만들기",
+    imageUrl: "/images/product1.jpg",
+    price: 299000,
+    category: "초등학교추천",
+    duration: "2~3차시"
+  },
+  {
+    id: "4",
+    name: "언플러그드 DIY 컴퓨터 만들기",
+    imageUrl: "/images/product1.jpg",
+    price: 299000,
+    category: "초등학교추천",
+    duration: "2~3차시"
+  },
+  {
+    id: "5",
+    name: "언플러그드 DIY 컴퓨터 만들기",
+    imageUrl: "/images/product1.jpg",
+    price: 299000,
+    category: "초등학교추천",
+    duration: "2~3차시"
+  },  {
+    id: "6",
+    name: "언플러그드 DIY 컴퓨터 만들기",
+    imageUrl: "/images/product1.jpg",
+    price: 299000,
+    category: "초등학교추천",
+    duration: "2~3차시"
+  }
+
+];
+
+// 게시판 데이터
+const inquiryBoardItems = [
+  {
+    icon: 'key',
+    category: '교구문의',
+    title: '견적 문의 드립니다.',
+    date: '2025.04.25',
+    author: '김규리'
+  }
+];
+
+const lessonBoardItems = [
+  {
+    icon: 'key',
+    category: '대면 수업 문의',
+    title: '견적 문의 드립니다.',
+    date: '2025.04.25',
+    author: '김규리'
+  }
+];
+
+interface HomeContentProps {
+  slides: Slide[];
+}
+
+export default function HomeContent({ slides }: HomeContentProps) {
+  return (
+    <Box>
+      <HeroBanner initialSlides={slides} />
+      
+      <MenuShortcuts />
+      <ProductSection
+        categoryTitle="학년별 & 주제별 베스트 키트 추천"
+        categoryLinks={categoryLinks}
+        products={products}
+      />
+      <Container maxWidth="lg" sx={{ display: 'flex', gap: 3, mt: 4, px: 2, justifyContent: 'space-between' }}>
+        <BoardList
+          title="교육 키트 구매 견적 문의"
+          items={inquiryBoardItems}
+          onAddClick={() => console.log('Add inquiry clicked')}
+        />
+        <BoardList
+          title="코딩 출강 및 수업 문의"
+          items={lessonBoardItems}
+          onAddClick={() => console.log('Add lesson inquiry clicked')}
+        />
+      </Container>
+      <Statistics />
+    </Box>
+  );
+} 
