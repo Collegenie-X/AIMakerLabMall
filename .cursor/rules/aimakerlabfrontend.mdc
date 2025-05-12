@@ -1,0 +1,30 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+페이지 구조: Next.js의 페이지 컴포넌트는 /pages 디렉토리에만 위치한다. 각 페이지 컴포넌트는 필요한 데이터 패칭을 위해 custom hook을 호출하고, UI를 구성하는 데 필요한 하위 컴포넌트를 렌더링한다. _app.tsx와 _document.tsx를 활용해 전역 설정 (예: 테마, 글꼴, 전역 CSS) 및 MUI의 ThemeProvider 적용 등을 설정한다.
+
+레이아웃: 공통 레이아웃 컴포넌트(예: 내비게이션 바, 푸터)는 /layouts 디렉토리에 두고, 각 페이지에서 해당 레이아웃을 감싼 형태로 사용한다. 모든 페이지에 공통으로 적용할 레이아웃은 _app.tsx에서 전역으로 적용하거나, Next.js의 getLayout 패턴을 활용한다.
+
+컴포넌트 구조: 재사용 가능한 UI 조각은 /components/common에 작성하고, 개별 도메인(페이지 특화) 컴포넌트는 /components/feature 아래 관련 도메인별 폴더로 구분한다. 예를 들어, /components/feature/order/OrderCard.tsx와 같이 기능별로 정리한다. 공통 컴포넌트는 범용적이고 스타일/속성이 유연하도록 만들고, feature 컴포넌트는 해당 도메인에 특화된 로직을 포함할 수 있다.
+
+데이터 요청 (Axios): 모든 HTTP API 호출 로직은 /api 디렉토리에 모은다. 여기서 Axios 인스턴스를 생성 (axios.create)하여 기본 baseURL과 공통 헤더를 설정하고, 개별 API 함수 (예: getUserList, createOrder)를 정의한다. API URL이나 엔드포인트 경로는 절대로 컴포넌트 안에 하드코딩하지 않고, 환경변수(NEXT_PUBLIC_*)를 통해 주입받은 baseURL을 사용한다.
+
+React Query 활용: 데이터 패칭은 React Query를 통해 수행한다. 서버 상태 관리를 위해 custom hook을 /hooks 디렉토리에 작성한다 (예: useUsers() 훅 내부에서 useQuery('users', fetchUserList) 호출). 이렇게 함으로써 컴포넌트는 훅을 통해 데이터와 로딩상태를 얻고, 로직과 UI를 분리한다. Mutations도 useMutation을 감싼 custom hook (useCreateOrder 등)으로 만들어 사용한다.
+
+React Query 설정: 전역으로 QueryClient를 설정하고 QueryClientProvider로 앱을 감싼다. 필요한 경우 기본 옵션(예: staleTime, retry 횟수, 에러 처리)을 설정하여 전역 캐시 동작을 조율한다. 쿼리 키는 배열 형태로 구조적으로 구성하여(예: ['users', userId]), 동일 데이터를 사용하는 컴포넌트 간 캐시를 공유하고 갱신할 수 있도록 한다.
+
+MUI (Material-UI) 사용: MUI 컴포넌트의 테마 커스터마이징을 위해 /styles 또는 /theme 디렉토리에 테마 설정 파일을 둔다 (예: theme.ts 정의 후 _app.tsx에서 <ThemeProvider theme={theme}> 적용). MUI의 styled API나 sx prop을 일관성 있게 사용하여 스타일을 지정하고, 임시로 필요한 스타일은 CSS 클래스 대신 sx를 활용한다. MUI 컴포넌트를 확장하거나 새로 만들 때는 가능한 MUI의 구성요소를 조합하고, 공통 스타일은 테마에 추가하여 디자인 일관성을 유지한다.
+
+상태 관리: 전역 상태가 필요하면 React Query의 캐시나 Context API를 활용한다. 불필요한 Redux 등은 도입하지 않되, 필요 시 React Context를 정의하여 앱 전역에서 공유해야 하는 상태(예: 현재 사용자 정보, 테마 모드 등)를 관리한다. 이때도 Context 값 제공자는 /components/common 또는 /providers 등에 두어 관심사를 분리한다.
+
+타입 및 인터페이스 관리
+•	타입 정의 위치: 프로젝트 전반에서 활용되는 타입 정의는 /types 디렉토리에 모아 관리한다. 예를 들어, types/api.d.ts에 공용 API 요청/응답 인터페이스를 정의하고, 도메인별로 types/user.d.ts, types/order.d.ts 등으로 구분할 수 있다. 이러한 타입 정의 파일은 전역 선언이 필요한 경우 global.d.ts에 reference를 추가한다.
+
+•	도메인 모델 타입: 백엔드 Django 모델과 연동되는 데이터 구조의 경우, 프론트엔드에서 대응되는 TypeScript 인터페이스를 정의한다. 예를 들어 Django의 Order 모델에 대응하는 Order 타입을 정의하고, 필드 이름과 타입을 백엔드와 일치시키되 카멜케이스 변환 등의 규칙을 적용한다 (created_at -> createdAt 등).
+
+•	API 타입: Axios를 통한 API 호출의 요청과 응답에 대한 타입을 정확히 정의한다. 모든 API 함수는 반환 타입을 명시하여 (Promise<Order[]> 등) 프론트엔드에서 API 응답을 받을 때 타입 추론이 가능하도록 한다. API 응답 타입이 변경되면 /types의 정의를 즉시 업데이트하여 타입 오류로 문제를 조기에 발견한다.
+
+•	재사용성과 유지보수: 타입 이름은 의미 있게 짓고 재사용한다. 반복되는 필드 집합은 별도 타입으로 분리한 후 extend하거나 intersection(&)으로 구성한다. 예를 들어 UserBasic과 UserDetail 등 단계별 타입을 나누고 관계를 표현한다. 타입 정의에는 필요한 경우 주석으로 필드 의미를 설명하여, 사용자가 해당 타입을 볼 때 바로 이해할 수 있게 한다.
+
