@@ -1,7 +1,24 @@
 'use client';
 
 import { useState } from 'react';
-import { AppBar, Box, Container, Typography, Button, Popper, Paper, ClickAwayListener, Stack, styled } from '@mui/material';
+import { 
+  AppBar, 
+  Box, 
+  Container, 
+  Typography, 
+  Button, 
+  Popper, 
+  Paper, 
+  ClickAwayListener, 
+  Stack, 
+  styled,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  TextField,
+  DialogActions,
+  Divider
+} from '@mui/material';
 import Link from 'next/link';
 
 // 메뉴 데이터
@@ -139,6 +156,15 @@ const MenuItem = ({
 export default function Header() {
   const [openMenuIndex, setOpenMenuIndex] = useState<number | null>(null);
   const [anchorEls, setAnchorEls] = useState<(HTMLElement | null)[]>(new Array(menuItems.length).fill(null));
+  const [openLoginDialog, setOpenLoginDialog] = useState(false);
+
+  const handleLoginClick = () => {
+    setOpenLoginDialog(true);
+  };
+
+  const handleLoginClose = () => {
+    setOpenLoginDialog(false);
+  };
 
   const handleMenuClick = (event: React.MouseEvent<HTMLElement>, index: number) => {
     event.preventDefault();
@@ -163,6 +189,7 @@ export default function Header() {
   };
 
   return (
+    <> 
     <AppBar position="sticky" color="default" elevation={1} sx={{ position: 'relative', zIndex: 1000 }}>
       <Container maxWidth="lg">
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 2 }}>
@@ -181,10 +208,74 @@ export default function Header() {
                 handleClose={handleClose}
               />
             ))}
-            <Button color="inherit" sx={{ ml: 10, fontWeight: 'bold' }}>로그인</Button>
+            <Button color="inherit" sx={{ ml: 10, fontWeight: 'bold' }}  onClick={handleLoginClick}>로그인</Button>
           </Stack>
         </Box>
       </Container>
     </AppBar>
+
+<Dialog open={openLoginDialog} onClose={handleLoginClose}>
+<DialogTitle sx={{ textAlign: 'center' }}>로그인</DialogTitle>
+<DialogContent>
+  <Stack spacing={2} sx={{ mt: 1, minWidth: '300px' }}>
+    <TextField
+      autoFocus
+      label="이메일"
+      type="email"
+      fullWidth
+      variant="outlined"
+    />
+    <TextField
+      label="비밀번호"
+      type="password"
+      fullWidth
+      variant="outlined"
+    />
+    <Button 
+      variant="contained" 
+      fullWidth 
+      sx={{ mt: 2 }}
+    >
+      로그인
+    </Button>
+    
+    <Divider sx={{ my: 2 }}>소셜 로그인</Divider>
+    
+    <Button 
+      variant="outlined" 
+      fullWidth 
+      sx={{ 
+        mb: 1,
+        bgcolor: '#fff',
+        color: '#757575',
+        borderColor: '#757575',
+        '&:hover': {
+          borderColor: '#616161',
+          bgcolor: '#fafafa'
+        }
+      }}
+    >
+      Google로 로그인
+    </Button>
+    <Button 
+      variant="contained" 
+      fullWidth
+      sx={{ 
+        bgcolor: '#FEE500',
+        color: '#000',
+        '&:hover': {
+          bgcolor: '#FDD835'
+        }
+      }}
+    >
+      카카오톡으로 로그인
+    </Button>
+  </Stack>
+</DialogContent>
+<DialogActions sx={{ px: 3, pb: 2 }}>
+  <Button onClick={handleLoginClose}>취소</Button>
+</DialogActions>
+</Dialog>
+</>
   );
 } 

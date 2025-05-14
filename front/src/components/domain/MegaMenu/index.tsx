@@ -17,7 +17,7 @@ export default function MegaMenu({ sections }: MegaMenuProps) {
     <Box className="bg-white shadow-lg p-6">
       <Grid container spacing={4}>
         {sections.map((section, index) => (
-          <Grid item xs={12} sm={6} md={3} key={index}>
+           <Grid sm={6} lg={3} key={index}>
             <Typography variant="h6" className="mb-4 font-bold">
               {section.title}
             </Typography>
