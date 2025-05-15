@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 import {
 AppBar,
@@ -21,6 +21,12 @@ DialogActions,
 Divider
 } from '@mui/material';
 import Link from 'next/link';
+
+import Logo from './Logo';
+import MenuItem from './MenuItem';
+import LoginDialog from './LoginDialog';
+import RegisterDialog, { RegisterData } from './RegisterDialog';
+import UserMenu from './UserMenu';
 
 // 메뉴 데이터
 const menuItems = [
@@ -75,97 +81,26 @@ color: '#fff',
 }
 }));
 
-// 서브 컴포넌트: 로고
-const Logo = () => ( <StyledLink href="/">
-<Box sx={{ display: 'flex', alignItems: 'center' }}>
-<Typography variant="h6" component="span" sx={{ color: '#E53E3E', fontWeight: 'bold' }}>
-AI Maker </Typography>
-<Typography variant="h6" component="span" sx={{ ml: 1 }}>
-Lab </Typography> </Box> </StyledLink>
-);
-
-// 서브 컴포넌트: 메뉴 아이템
-interface MenuItemProps {
-menu: {
-title: string;
-items: { name: string; link: string }[];
-};
-index: number;
-openMenuIndex: number | null;
-anchorEl: HTMLElement | null;
-handleMenuClick: (event: React.MouseEvent<HTMLElement>, index: number) => void;
-handleMenuEnter: (event: React.MouseEvent<HTMLElement>, index: number) => void;
-handleClose: () => void;
-}
-
-const MenuItem = ({
-menu,
-index,
-openMenuIndex,
-anchorEl,
-handleMenuClick,
-handleMenuEnter,
-handleClose
-}: MenuItemProps) => (
-<Box
-onMouseEnter={(e) => handleMenuEnter(e, index)}
-sx={{ position: 'relative' }}
-
->
-
-
-<Button 
-
-
-
-  color="inherit"
-  sx={{ fontWeight: 'bold' }}
-  onClick={(e) => handleMenuClick(e, index)}
->
-  {menu.title}
-</Button>
-<Popper
-  open={openMenuIndex === index}
-  anchorEl={anchorEl}
-  placement="bottom-start"
-  sx={{ zIndex: 1001, minWidth: '140px' }}
->
-  <ClickAwayListener onClickAway={handleClose}>
-    <Paper 
-      elevation={3}
-      sx={{ 
-        mt: 2,
-        borderRadius: '5px',
-      }}
-    >
-      {menu.items.map((item, itemIndex) => (
-        <StyledLink
-          key={itemIndex}
-          href={item.link}
-        >
-          <MenuItemBox>
-            {item.name}
-          </MenuItemBox>
-        </StyledLink>
-      ))}
-    </Paper>
-  </ClickAwayListener>
-</Popper>
-
-
-  </Box>
-);
-
 // 메인 컴포넌트
 export default function Header() {
 const [openMenuIndex, setOpenMenuIndex] = useState<number | null>(null);
 const [anchorEls, setAnchorEls] = useState<(HTMLElement | null)[]>(new Array(menuItems.length).fill(null));
 const [openLoginDialog, setOpenLoginDialog] = useState(false);
+const [openRegisterDialog, setOpenRegisterDialog] = useState(false);
 const [loginData, setLoginData] = useState({
 email: '',
 password: ''
 });
 const [error, setError] = useState('');
+const [registerError, setRegisterError] = useState('');
+const [userName, setUserName] = useState<string | null>(null);
+
+useEffect(() => {
+const storedUser = localStorage.getItem('user');
+if (storedUser) {
+setUserName(storedUser);
+}
+}, []);
 
 const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 const { name, value } = e.target;
@@ -177,33 +112,81 @@ setLoginData(prev => ({
 
 const handleLogin = async () => {
 try {
-const response = await axios.
-            post('http://localhost:8000/api/v1/auth/login', {
+const response = await axios.post('http://localhost:8000/api/v1/auth/login/', {
 email: loginData.email,
 password: loginData.password
 });
 
-
-  if (response.status === 200 && response.data) {
-
-    localStorage.setItem("token",response.data.tokens.access)
-    console.log('로그인 성공:', response.data);
-    handleLoginClose();
-  }
-} catch (err) {
-  setError('로그인에 실패했습니다.');
-  console.error('로그인 에러:', err);
+if (response.status === 200 && response.data) {
+localStorage.setItem("token", response.data.tokens.access);
+localStorage.setItem("refresh_token", response.data.tokens.refresh);
+localStorage.setItem("user", response.data.user.name);
+setUserName(response.data.user.name);
+handleLoginClose();
 }
+} catch (err) {
+setError('로그인에 실패했습니다.');
+console.error('로그인 에러:', err);
+}
+};
 
+const handleRegister = async (data: RegisterData) => {
+try {
+const response = await axios.post('http://localhost:8000/api/v1/auth/register/', data);
 
+if (response.status === 201 && response.data) {
+localStorage.setItem("token", response.data.tokens.access);
+localStorage.setItem("refresh_token", response.data.tokens.refresh);
+localStorage.setItem("user", response.data.user.name);
+setUserName(response.data.user.name);
+handleRegisterClose();
+}
+} catch (err: any) {
+setRegisterError(err.response?.data?.email || '회원가입에 실패했습니다.');
+console.error('회원가입 에러:', err);
+}
+};
+
+const handleLogout = async () => {
+try {
+const token = localStorage.getItem('token');
+await axios.post(
+'http://localhost:3000/api/v1/auth/logout/',
+{ token },
+{
+headers: {
+Authorization: `Bearer ${token}`
+}
+}
+);
+} catch (error) {
+console.error('로그아웃 에러:', error);
+} finally {
+localStorage.removeItem('token');
+localStorage.removeItem('refresh_token');
+localStorage.removeItem('user');
+setUserName(null);
+}
 };
 
 const handleLoginClick = () => {
 setOpenLoginDialog(true);
 };
 
+const handleRegisterClick = () => {
+setOpenLoginDialog(false);
+setOpenRegisterDialog(true);
+};
+
 const handleLoginClose = () => {
 setOpenLoginDialog(false);
+setLoginData({ email: '', password: '' });
+setError('');
+};
+
+const handleRegisterClose = () => {
+setOpenRegisterDialog(false);
+setRegisterError('');
 };
 
 const handleMenuClick = (event: React.MouseEvent<HTMLElement>, index: number) => {
@@ -247,91 +230,47 @@ return (
             handleClose={handleClose}
           />
         ))}
-        <Button color="inherit" sx={{ ml: 10, fontWeight: 'bold' }}  onClick={handleLoginClick}>로그인</Button>
+        {userName ? (
+          <UserMenu userName={userName} onLogout={handleLogout} />
+        ) : (
+          <Box 
+            component="div" 
+            onClick={handleLoginClick} 
+            sx={{  
+              pt: 1 ,                                      
+              cursor: 'pointer', 
+              fontWeight: 'bold',
+              color: 'inherit',
+              '&:hover': {
+                opacity: 0.8
+              }
+            }}
+          >
+            로그인
+          </Box>
+        )}
       </Stack>
     </Box>
   </Container>
 </AppBar>
 
 
-<Dialog open={openLoginDialog} onClose={handleLoginClose}>
-<DialogTitle sx={{ textAlign: 'center' }}>로그인</DialogTitle>
-<DialogContent>
-  <Stack spacing={2} sx={{ mt: 1, minWidth: '300px' }}>
-    <TextField
-      autoFocus
-      label="이메일"
-      type="email"
-      name='email'
-      value={loginData.email}
-      onChange={handleInputChange}
-      fullWidth
-      variant="outlined"
-    />
-    <TextField
-      label="비밀번호"
-      type="password"
-      name='password'
-      value={loginData.password}
-      onChange={handleInputChange}
-      fullWidth
-      variant="outlined"
-    />
+<LoginDialog
+  open={openLoginDialog}
+  onClose={handleLoginClose}
+  loginData={loginData}
+  error={error}
+  onInputChange={handleInputChange}
+  onLogin={handleLogin}
+  onRegisterClick={handleRegisterClick}
+/>
 
-
-{error && (
-          <Typography color="error" variant="body2">
-            {error}
-          </Typography>
-        )}
-<Button 
-  variant="contained" 
-  fullWidth 
-  sx={{ mt: 2 }}
-  onClick={handleLogin}
->
-  로그인
-</Button>
-
-<Divider sx={{ my: 2 }}>소셜 로그인</Divider>
-
-<Button 
-  variant="outlined" 
-  fullWidth 
-  sx={{ 
-    mb: 1,
-    bgcolor: '#fff',
-    color: '#757575',
-    borderColor: '#757575',
-    '&:hover': {
-      borderColor: '#616161',
-      bgcolor: '#fafafa'
-    }
-  }}
->
-  Google로 로그인
-</Button>
-<Button 
-  variant="contained" 
-  fullWidth
-  sx={{ 
-    bgcolor: '#FEE500',
-    color: '#000',
-    '&:hover': {
-      bgcolor: '#FDD835'
-    }
-  }}
->
-  카카오톡으로 로그인
-</Button>
-
-
-  </Stack>
-</DialogContent>
-<DialogActions sx={{ px: 3, pb: 2 }}>
-  <Button onClick={handleLoginClose}>취소</Button>
-</DialogActions>
-</Dialog>
+<RegisterDialog
+  open={openRegisterDialog}
+  onClose={handleRegisterClose}
+  onRegister={handleRegister}
+  error={registerError}
+/>
 </>
   );
 } 

@@ -38,10 +38,10 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "accounts.apps.AccountsConfig",
     "rest_framework",
     "rest_framework_simplejwt",
     "corsheaders",
+    "accounts",
 ]
 
 REST_FRAMEWORK = {
@@ -59,9 +59,7 @@ SIMPLE_JWT = {
 }
 
 # CORS 설정
-CORS_ALLOW_ALL_ORIGINS = (
-    True  # 개발 환경용, 프로덕션에서는 특정 도메인만 허용하도록 변경
-)
+CORS_ALLOW_ALL_ORIGINS = True  # For development only
 CORS_ALLOW_CREDENTIALS = True
 
 # 보안 설정
@@ -149,3 +147,11 @@ STATIC_URL = "static/"
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# Custom user model
+AUTH_USER_MODEL = "accounts.User"
+
+# Email settings
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"  # For development
+DEFAULT_FROM_EMAIL = "noreply@aimakerlab.com"
+FRONTEND_URL = "http://localhost:3000"

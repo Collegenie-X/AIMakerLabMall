@@ -1,26 +1,20 @@
+# This file is intentionally empty as we're using the custom User model from the authentication app
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from django.contrib.auth.models import User
+from .models import User, EmailVerificationToken
 
 
 class CustomUserAdmin(UserAdmin):
-    list_display = (
-        "username",
-        "email",
-        "first_name",
-        "last_name",
-        "is_staff",
-        "date_joined",
-    )
+    list_display = ("email", "username", "is_staff", "date_joined", "created_at")
     list_filter = ("is_staff", "is_superuser", "is_active", "groups")
-    search_fields = ("username", "first_name", "last_name", "email")
+    search_fields = ("email", "username")
     ordering = ("-date_joined",)
 
     fieldsets = (
-        (None, {"fields": ("username", "password")}),
-        ("개인정보", {"fields": ("first_name", "last_name", "email")}),
+        (None, {"fields": ("email", "password")}),
+        ("Personal Info", {"fields": ("username", "first_name", "last_name")}),
         (
-            "권한",
+            "Permissions",
             {
                 "fields": (
                     "is_active",
@@ -31,10 +25,23 @@ class CustomUserAdmin(UserAdmin):
                 ),
             },
         ),
-        ("중요 일자", {"fields": ("last_login", "date_joined")}),
+        (
+            "Important dates",
+            {"fields": ("last_login", "date_joined", "created_at", "updated_at")},
+        ),
+    )
+    readonly_fields = ("created_at", "updated_at")
+
+    add_fieldsets = (
+        (
+            None,
+            {
+                "classes": ("wide",),
+                "fields": ("email", "username", "password1", "password2"),
+            },
+        ),
     )
 
 
-# 기존 UserAdmin을 커스텀 버전으로 교체
-admin.site.unregister(User)
 admin.site.register(User, CustomUserAdmin)
+admin.site.register(EmailVerificationToken)
