@@ -1,10 +1,10 @@
 'use client';
 
 import { Box, Container, Typography, Grid } from '@mui/material';
-import { School, AccessTime, Group, Book, Business, Assignment } from '@mui/icons-material';
+import { School, AccessTime, Group, Book, Business, Assignment, SvgIconComponent } from '@mui/icons-material';
 import Image from 'next/image';
 
-const StatItem = ({ value, label, icon: Icon }: { value: string; label: string; icon: any }) => (
+const StatItem = ({ value, label, icon: Icon }: { value: string; label: string; icon: SvgIconComponent }) => (
   <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
     <Box
       sx={{

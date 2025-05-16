@@ -3,13 +3,14 @@ import {
   School, 
   Description, 
   Code, 
-  QuestionAnswer
+  QuestionAnswer,
+  SvgIconComponent
 } from '@mui/icons-material';
 
 export interface MenuShortcut {
   id: string;
   title: string;
-  icon: any;
+  icon: SvgIconComponent;
   url: string;
 }
 

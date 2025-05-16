@@ -10,12 +10,11 @@ import {
   Typography,
   Alert,
 } from '@mui/material';
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 
 interface RegisterDialogProps {
   open: boolean;
   onClose: () => void;
-  onRegister: (data: RegisterData) => Promise<void>;
   error?: string;
 }
 
@@ -28,7 +27,6 @@ export interface RegisterData {
 export const RegisterDialog = ({
   open,
   onClose,
-  onRegister,
   error
 }: RegisterDialogProps) => {
   const [formData, setFormData] = useState<RegisterData>({
@@ -91,9 +89,9 @@ export const RegisterDialog = ({
         setRegistrationSuccess(true);
         setRegisteredEmail(formData.email);
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Registration error:', error);
-      if (error.response?.data) {
+      if (error instanceof AxiosError && error.response?.data) {
         setFormErrors(error.response.data);
       }
     }

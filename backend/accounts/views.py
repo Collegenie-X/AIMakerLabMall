@@ -6,6 +6,12 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import IsAuthenticated
 from .serializers import LoginSerializer
 from .models import EmailVerificationToken
+import os
+import requests
+from django.conf import settings
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
+from firebase_admin import auth
 
 User = get_user_model()
 
@@ -120,5 +126,163 @@ class VerifyEmailView(APIView):
         except EmailVerificationToken.DoesNotExist:
             return Response(
                 {"error": "Invalid verification token"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+
+class KakaoCallbackView(APIView):
+    def post(self, request):
+        try:
+            code = request.data.get("code")
+            print(f"Received Kakao auth code: {code}")
+
+            print("client_id", settings.KAKAO_CLIENT_ID)
+            print("client_secret", settings.KAKAO_CLIENT_SECRET)
+            print("redirect_uri", settings.KAKAO_REDIRECT_URI)
+
+            # Get access token from Kakao
+            token_url = "https://kauth.kakao.com/oauth/token"
+            data = {
+                "grant_type": "authorization_code",
+                "client_id": settings.KAKAO_CLIENT_ID,
+                "client_secret": settings.KAKAO_CLIENT_SECRET,
+                "redirect_uri": settings.KAKAO_REDIRECT_URI,
+                "code": code,
+            }
+            print(f"Requesting Kakao token with data: {data}")
+
+            token_response = requests.post(token_url, data=data)
+            token_data = token_response.json()
+            print(f"Kakao token response: {token_data}")
+
+            if "error" in token_data:
+                return Response(
+                    {
+                        "error": f"Failed to get Kakao token: {token_data.get('error_description', 'Unknown error')}"
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            access_token = token_data.get("access_token")
+            if not access_token:
+                return Response(
+                    {"error": "No access token in Kakao response"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            # Get user info from Kakao
+            user_url = "https://kapi.kakao.com/v2/user/me"
+            headers = {
+                "Authorization": f"Bearer {access_token}",
+                "Content-type": "application/x-www-form-urlencoded;charset=utf-8",
+            }
+            print("Requesting Kakao user info...")
+            user_response = requests.get(user_url, headers=headers)
+            user_data = user_response.json()
+            print(f"Kakao user info response: {user_data}")
+
+            kakao_account = user_data.get("kakao_account")
+            if not kakao_account:
+                return Response(
+                    {"error": "Failed to get Kakao account info"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            email = kakao_account.get("email")
+            if not email:
+                return Response(
+                    {"error": "Email not provided by Kakao"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            # Get or create user
+            user, created = User.objects.get_or_create(
+                email=email,
+                defaults={"username": email, "is_active": True, "email_verified": True},
+            )
+            print(f"User {'created' if created else 'found'} with email: {email}")
+
+            # Generate JWT tokens
+            refresh = RefreshToken.for_user(user)
+
+            return Response(
+                {
+                    "tokens": {
+                        "refresh": str(refresh),
+                        "access": str(refresh.access_token),
+                    },
+                    "user": {
+                        "email": user.email,
+                        "name": user.get_full_name() or user.email,
+                    },
+                }
+            )
+
+        except Exception as e:
+            print(f"Error in KakaoCallbackView: {str(e)}")
+            return Response(
+                {"error": f"Kakao login failed: {str(e)}"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+
+class GoogleCallbackView(APIView):
+    def post(self, request):
+        try:
+            # Firebase ID 토큰 검증
+            id_token = request.data.get("id_token")
+            if not id_token:
+                return Response(
+                    {"error": "ID token is required"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            # Firebase Admin SDK로 토큰 검증
+            decoded_token = auth.verify_id_token(id_token)
+
+            # 사용자 정보 추출
+            email = decoded_token.get("email")
+            if not email:
+                return Response(
+                    {"error": "Email not found in token"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            # 이름 정보 가져오기 (없으면 이메일 사용)
+            name = decoded_token.get("name", email)
+
+            # 사용자 생성 또는 조회
+            user, created = User.objects.get_or_create(
+                email=email,
+                defaults={
+                    "username": email,
+                    "is_active": True,
+                    "email_verified": True,
+                },
+            )
+
+            # JWT 토큰 생성
+            refresh = RefreshToken.for_user(user)
+
+            return Response(
+                {
+                    "tokens": {
+                        "refresh": str(refresh),
+                        "access": str(refresh.access_token),
+                    },
+                    "user": {
+                        "email": user.email,
+                        "name": user.get_full_name() or user.email,
+                    },
+                }
+            )
+
+        except auth.InvalidIdTokenError:
+            return Response(
+                {"error": "Invalid ID token"}, status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            return Response(
+                {"error": f"Google login failed: {str(e)}"},
                 status=status.HTTP_400_BAD_REQUEST,
             )

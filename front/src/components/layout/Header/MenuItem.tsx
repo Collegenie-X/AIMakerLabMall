@@ -1,13 +1,13 @@
 import { Box, Button, Popper, Paper, ClickAwayListener, styled } from '@mui/material';
 import Link from 'next/link';
 
-const StyledLink = styled(Link)(({ theme }) => ({
+const StyledLink = styled(Link)(() => ({
   textDecoration: 'none',
   color: 'inherit',
 }));
 
-const MenuItemBox = styled(Box)(({ theme }) => ({
-  padding: theme.spacing(1, 2),
+const MenuItemBox = styled(Box)(() => ({
+  padding: '8px 16px',
   cursor: 'pointer',
   fontSize: '13px',
   '&:hover': {

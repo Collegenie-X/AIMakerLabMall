@@ -1,8 +1,7 @@
 'use client';
 
-import { Box, Container, Stack, Typography, Link as MuiLink, styled, Divider } from '@mui/material';
+import { Box, Container, Stack, Typography, styled, Divider } from '@mui/material';
 import Link from 'next/link';
-import Image from 'next/image';
 
 const StyledFooter = styled('footer')(({ theme }) => ({
   backgroundColor: theme.palette.grey[300],

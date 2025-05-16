@@ -11,6 +11,10 @@ import {
   Link,
   Box
 } from '@mui/material';
+import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { auth, googleProvider } from '@/lib/firebase';
+import { useUser } from '@/contexts/UserContext';
+import axios from 'axios';
 
 interface LoginDialogProps {
   open: boolean;
@@ -23,6 +27,7 @@ interface LoginDialogProps {
   onInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onLogin: () => void;
   onRegisterClick: () => void;
+  setError: React.Dispatch<React.SetStateAction<string>>;
 }
 
 export const LoginDialog = ({
@@ -32,8 +37,65 @@ export const LoginDialog = ({
   error,
   onInputChange,
   onLogin,
-  onRegisterClick
+  onRegisterClick,
+  setError
 }: LoginDialogProps) => {
+  const { setUserName } = useUser();
+
+  const handleKakaoLogin = () => {
+    const KAKAO_AUTH_URL = `https://kauth.kakao.com/oauth/authorize?client_id=${process.env.NEXT_PUBLIC_KAKAO_CLIENT_ID}&redirect_uri=${process.env.NEXT_PUBLIC_KAKAO_REDIRECT_URI}&response_type=code`;
+    window.location.href = KAKAO_AUTH_URL;
+  };
+
+  const handleGoogleLogin = async () => {
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      
+      if (!credential) {
+        throw new Error('No credentials returned from Google');
+      }
+
+      // Get ID token
+      const idToken = await result.user.getIdToken();
+      
+      // Send the ID token to your backend
+      const response = await axios.post(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/google/callback/`,
+        { id_token: idToken },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        }
+      );
+
+      if (response.status === 200 && response.data) {
+        // Store tokens and user data
+        localStorage.setItem('token', response.data.tokens.access);
+        localStorage.setItem('refresh_token', response.data.tokens.refresh);
+        localStorage.setItem('user', response.data.user.name);
+        
+        // Update global state
+        setUserName(response.data.user.name);
+        
+        // Close dialog
+        onClose();
+      }
+    } catch (error) {
+      console.error('Google login error:', error);
+      let errorMessage = '로그인 중 오류가 발생했습니다.';
+      
+      if (axios.isAxiosError(error)) {
+        errorMessage = error.response?.data?.error || errorMessage;
+      }
+      
+      // You might want to show an error message to the user here
+      // For example, you could set an error state and display it in the UI
+      setError(errorMessage);
+    }
+  };
+
   return (
     <Dialog open={open} onClose={onClose}>
       <DialogTitle sx={{ textAlign: 'center' }}>로그인</DialogTitle>
@@ -93,6 +155,7 @@ export const LoginDialog = ({
           <Button 
             variant="outlined" 
             fullWidth 
+            onClick={handleGoogleLogin}
             sx={{ 
               mb: 1,
               bgcolor: '#fff',
@@ -109,6 +172,7 @@ export const LoginDialog = ({
           <Button 
             variant="contained" 
             fullWidth
+            onClick={handleKakaoLogin}
             sx={{ 
               bgcolor: '#FEE500',
               color: '#000',

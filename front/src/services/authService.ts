@@ -2,7 +2,7 @@
 // 로그인, 회원가입, 로그아웃 등의 API 함수 구현
 
 import axiosInstance from './axiosInstance';
-import { LoginRequest, LoginResponse, SignupRequest, User } from '../types/auth';
+import { LoginResponse, SignupRequest, User } from '../types/auth';
 
 // 로그인 API
 const login = async (email: string, password: string): Promise<LoginResponse> => {

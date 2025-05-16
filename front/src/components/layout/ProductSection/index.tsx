@@ -3,6 +3,7 @@
 import { Box, Container } from '@mui/material';
 import ProductCategory from '@/components/domain/ProductCategory';
 import ProductGrid from '@/components/domain/ProductGrid';
+import { Product } from '@/types/products';
 
 interface ProductSectionProps {
   categoryTitle: string;
@@ -10,7 +11,7 @@ interface ProductSectionProps {
     label: string;
     url: string;
   }[];
-  products: any[];
+  products: Product[];
 }
 
 export default function ProductSection({ 

@@ -2,10 +2,16 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import { Container, Paper, Typography, CircularProgress, Box } from '@mui/material';
 
-export default function VerifyEmail({ params }: { params: { token: string } }) {
+interface PageProps {
+  params: {
+    token: string;
+  };
+}
+
+export default function VerifyEmailPage({ params }: PageProps) {
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [message, setMessage] = useState('');
   const router = useRouter();
@@ -31,9 +37,13 @@ export default function VerifyEmail({ params }: { params: { token: string } }) {
             router.push('/');
           }, 2000);
         }
-      } catch (error: any) {
+      } catch (error) {
         setStatus('error');
-        setMessage(error.response?.data?.error || '이메일 인증에 실패했습니다.');
+        if (error instanceof AxiosError) {
+          setMessage(error.response?.data?.error || '이메일 인증에 실패했습니다.');
+        } else {
+          setMessage('이메일 인증에 실패했습니다.');
+        }
       }
     };
 

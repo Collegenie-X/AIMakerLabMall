@@ -6,14 +6,14 @@ import { Slide } from '@/services/slidesService';
 import { KeyboardArrowLeft, KeyboardArrowRight } from '@mui/icons-material';
 import Link from 'next/link';
 
-const BannerContainer = styled(Box)(({ theme }) => ({
+const BannerContainer = styled(Box)(() => ({
   position: 'relative',
   height: '500px',
   overflow: 'hidden',
-  backgroundColor: theme.palette.grey[200],
+  backgroundColor: '#f5f5f5',
 }));
 
-const SlideContent = styled(Box)(({ theme }) => ({
+const SlideContent = styled(Box)(() => ({
   position: 'absolute',
   top: 0,
   left: 0,
@@ -45,7 +45,7 @@ const SlideImage = styled(Box)<{ src: string }>(({ src }) => ({
   }
 }));
 
-const SlideTextContent = styled(Box)(({ theme }) => ({
+const SlideTextContent = styled(Box)(() => ({
   position: 'relative',
   zIndex: 1,
   color: 'white',
@@ -53,7 +53,7 @@ const SlideTextContent = styled(Box)(({ theme }) => ({
   maxWidth: '600px',
 }));
 
-const NavButton = styled(Button)(({ theme }) => ({
+const NavButton = styled(Button)(() => ({
   position: 'absolute',
   top: '50%',
   transform: 'translateY(-50%)',
@@ -63,13 +63,13 @@ const NavButton = styled(Button)(({ theme }) => ({
   padding: 0,
   borderRadius: '50%',
   backgroundColor: 'rgba(255, 255, 255, 0.6)',
-  color: theme.palette.primary.main,
+  color: '#1976d2',
   '&:hover': {
     backgroundColor: 'rgba(255, 255, 255, 0.8)',
   },
 }));
 
-const IndicatorsContainer = styled(Box)(({ theme }) => ({
+const IndicatorsContainer = styled(Box)(() => ({
   position: 'absolute',
   bottom: '20px',
   left: '50%',

@@ -2,6 +2,7 @@
 // 상품 정보를 카드 형태로 표시
 
 import { Product } from '../../../types/products';
+import Image from 'next/image';
 
 interface ProductCardProps {
   product: Product;
@@ -14,7 +15,13 @@ export function ProductCard({ product, onClick }: ProductCardProps) {
     <div className="product-card" onClick={onClick}>
       {/* 상품 이미지 */}
       <div className="product-image">
-        <img src={product.imageUrl} alt={product.name} />
+        <Image 
+          src={product.imageUrl} 
+          alt={product.name}
+          width={300}
+          height={300}
+          style={{ objectFit: 'cover' }}
+        />
       </div>
       
       {/* 상품 정보 */}

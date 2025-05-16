@@ -6,7 +6,6 @@ import MenuShortcuts from "@/components/domain/MenuShortcuts";
 import ProductSection from "@/components/layout/ProductSection";
 import BoardList from "@/components/domain/Board/BoardList";
 import Statistics from "@/components/domain/Statistics";
-import Reference from "@/components/domain/Reference";
 import { Slide } from "@/services/slidesService";
 
 // 카테고리 링크

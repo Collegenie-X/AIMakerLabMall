@@ -1,7 +1,7 @@
 import { Box, Typography, styled } from '@mui/material';
 import Link from 'next/link';
 
-const StyledLink = styled(Link)(({ theme }) => ({
+const StyledLink = styled(Link)(() => ({
   textDecoration: 'none',
   color: 'inherit',
 }));

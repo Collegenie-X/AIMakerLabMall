@@ -11,7 +11,11 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+import os
 from datetime import timedelta
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -59,8 +63,29 @@ SIMPLE_JWT = {
 }
 
 # CORS 설정
-CORS_ALLOW_ALL_ORIGINS = True  # For development only
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+]
 CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_METHODS = [
+    "DELETE",
+    "GET",
+    "OPTIONS",
+    "PATCH",
+    "POST",
+    "PUT",
+]
+CORS_ALLOW_HEADERS = [
+    "accept",
+    "accept-encoding",
+    "authorization",
+    "content-type",
+    "dnt",
+    "origin",
+    "user-agent",
+    "x-csrftoken",
+    "x-requested-with",
+]
 
 # 보안 설정
 CSRF_TRUSTED_ORIGINS = ["http://localhost:3000"]  # Next.js 프론트엔드 주소
@@ -155,3 +180,19 @@ AUTH_USER_MODEL = "accounts.User"
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"  # For development
 DEFAULT_FROM_EMAIL = "noreply@aimakerlab.com"
 FRONTEND_URL = "http://localhost:3000"
+
+# Kakao OAuth settings
+KAKAO_CLIENT_ID = os.environ.get("KAKAO_CLIENT_ID")
+KAKAO_CLIENT_SECRET = os.environ.get("KAKAO_CLIENT_SECRET")
+KAKAO_REDIRECT_URI = os.environ.get("KAKAO_REDIRECT_URI")
+
+# Firebase Admin SDK는 서비스 계정 키 파일을 사용하므로 여기서는 설정이 필요 없습니다.
+# firebase_admin.py에서 초기화됩니다.
+
+# Firebase Admin SDK settings
+FIREBASE_SERVICE_ACCOUNT_PATH = os.path.join(BASE_DIR, "firebase-service-account.json")
+if not os.path.exists(FIREBASE_SERVICE_ACCOUNT_PATH):
+    raise FileNotFoundError(
+        f"Firebase service account file not found at {FIREBASE_SERVICE_ACCOUNT_PATH}. "
+        "Please add your firebase-service-account.json file to the backend directory."
+    )

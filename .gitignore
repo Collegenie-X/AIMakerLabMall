@@ -284,4 +284,7 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 
+aimakerlabmall-firebase-adminsdk-fbsvc-5664a20e66.json
+firebase-service-account.json
+
 # End of https://www.toptal.com/developers/gitignore/api/django,nextjs,macos,windows,visualstudiocode

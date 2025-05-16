@@ -1,16 +1,15 @@
 'use client';
 
-import { Box, Typography, styled, Divider } from '@mui/material';
+import { Box, Typography, styled } from '@mui/material';
 import Link from 'next/link';
 
-const CategoryContainer = styled(Box)(({ theme }) => ({
+const CategoryContainer = styled(Box)(() => ({
   display: 'flex',
   flexDirection: 'column',
 }));
 
 const CategoryTitle = styled(Box)(({ theme }) => ({
   maxWidth: 160,
-
   borderLeft: `4px solid ${theme.palette.common.black}`,
   paddingLeft: theme.spacing(3),
   marginBottom: theme.spacing(3),

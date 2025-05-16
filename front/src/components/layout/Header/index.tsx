@@ -1,32 +1,20 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import axios from 'axios';
+import { useState } from 'react';
+import axios, { AxiosError } from 'axios';
 import {
-AppBar,
-Box,
-Container,
-Typography,
-Button,
-Popper,
-Paper,
-ClickAwayListener,
-Stack,
-styled,
-Dialog,
-DialogTitle,
-DialogContent,
-TextField,
-DialogActions,
-Divider
+  AppBar,
+  Box,
+  Container,
+  Stack,
 } from '@mui/material';
-import Link from 'next/link';
 
 import Logo from './Logo';
 import MenuItem from './MenuItem';
 import LoginDialog from './LoginDialog';
-import RegisterDialog, { RegisterData } from './RegisterDialog';
+import RegisterDialog from './RegisterDialog';
 import UserMenu from './UserMenu';
+import { useUser } from '@/contexts/UserContext';
 
 // 메뉴 데이터
 const menuItems = [
@@ -65,22 +53,6 @@ items: [
 }
 ];
 
-// 스타일드 컴포넌트
-const StyledLink = styled(Link)(({ theme }) => ({
-textDecoration: 'none',
-color: 'inherit',
-}));
-
-const MenuItemBox = styled(Box)(({ theme }) => ({
-padding: theme.spacing(1, 2),
-cursor: 'pointer',
-fontSize: '13px',
-'&:hover': {
-backgroundColor: '#1891E0',
-color: '#fff',
-}
-}));
-
 // 메인 컴포넌트
 export default function Header() {
 const [openMenuIndex, setOpenMenuIndex] = useState<number | null>(null);
@@ -93,14 +65,7 @@ password: ''
 });
 const [error, setError] = useState('');
 const [registerError, setRegisterError] = useState('');
-const [userName, setUserName] = useState<string | null>(null);
-
-useEffect(() => {
-const storedUser = localStorage.getItem('user');
-if (storedUser) {
-setUserName(storedUser);
-}
-}, []);
+const { userName, setUserName } = useUser();
 
 const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 const { name, value } = e.target;
@@ -127,23 +92,6 @@ handleLoginClose();
 } catch (err) {
 setError('로그인에 실패했습니다.');
 console.error('로그인 에러:', err);
-}
-};
-
-const handleRegister = async (data: RegisterData) => {
-try {
-const response = await axios.post('http://localhost:8000/api/v1/auth/register/', data);
-
-if (response.status === 201 && response.data) {
-localStorage.setItem("token", response.data.tokens.access);
-localStorage.setItem("refresh_token", response.data.tokens.refresh);
-localStorage.setItem("user", response.data.user.name);
-setUserName(response.data.user.name);
-handleRegisterClose();
-}
-} catch (err: any) {
-setRegisterError(err.response?.data?.email || '회원가입에 실패했습니다.');
-console.error('회원가입 에러:', err);
 }
 };
 
@@ -263,12 +211,12 @@ return (
   onInputChange={handleInputChange}
   onLogin={handleLogin}
   onRegisterClick={handleRegisterClick}
+  setError={setError}
 />
 
 <RegisterDialog
   open={openRegisterDialog}
   onClose={handleRegisterClose}
-  onRegister={handleRegister}
   error={registerError}
 />
 </>

@@ -6,6 +6,12 @@ import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import { useLoginMutation, useSignupMutation, useLogoutMutation } from '../queries/authQueries';
 
+interface SignupData {
+  email: string;
+  password: string;
+  name: string;
+}
+
 export function useAuth() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -18,22 +24,74 @@ export function useAuth() {
   
   // 로그인 함수
   const login = async (email: string, password: string) => {
-    // 로그인 처리 로직 구현
+    try {
+      setIsLoading(true);
+      setError(null);
+      const response = await loginMutation.mutateAsync({ email, password });
+      
+      // Store tokens and user data
+      localStorage.setItem('token', response.tokens.access);
+      localStorage.setItem('refresh_token', response.tokens.refresh);
+      localStorage.setItem('user', response.user.name);
+      
+      router.push('/');
+    } catch (err) {
+      setError('로그인에 실패했습니다.');
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
   };
   
   // 회원가입 함수
-  const signup = async (userData: any) => {
-    // 회원가입 처리 로직 구현
+  const signup = async (userData: SignupData) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const response = await signupMutation.mutateAsync(userData);
+      
+      // Store tokens and user data
+      localStorage.setItem('token', response.tokens.access);
+      localStorage.setItem('refresh_token', response.tokens.refresh);
+      localStorage.setItem('user', response.user.name);
+      
+      router.push('/verify-email-sent');
+    } catch (err) {
+      setError('회원가입에 실패했습니다.');
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
   };
   
   // 로그아웃 함수
   const logout = async () => {
-    // 로그아웃 처리 로직 구현
+    try {
+      setIsLoading(true);
+      setError(null);
+      await logoutMutation.mutateAsync();
+      
+      // Clear local storage
+      localStorage.removeItem('token');
+      localStorage.removeItem('refresh_token');
+      localStorage.removeItem('user');
+      
+      // Clear query cache
+      queryClient.clear();
+      
+      router.push('/');
+    } catch (err) {
+      setError('로그아웃에 실패했습니다.');
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
   };
   
   // 인증 상태 확인 함수
   const checkAuth = () => {
-    // 인증 상태 확인 로직 구현
+    const token = localStorage.getItem('token');
+    return !!token;
   };
   
   return {

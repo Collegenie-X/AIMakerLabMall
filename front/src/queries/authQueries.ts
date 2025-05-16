@@ -4,6 +4,12 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import authService from '../services/authService';
 
+interface SignupData {
+  email: string;
+  password: string;
+  name: string;
+}
+
 // 로그인 뮤테이션
 export const useLoginMutation = () => {
   return useMutation({
@@ -19,7 +25,7 @@ export const useLoginMutation = () => {
 // 회원가입 뮤테이션
 export const useSignupMutation = () => {
   return useMutation({
-    mutationFn: (userData: any) => authService.signup(userData),
+    mutationFn: (userData: SignupData) => authService.signup(userData),
   });
 };
 

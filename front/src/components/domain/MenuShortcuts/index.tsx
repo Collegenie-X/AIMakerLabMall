@@ -4,13 +4,6 @@ import { Container, Typography, Box, Divider, styled, Stack } from '@mui/materia
 import Link from 'next/link';
 import { menuShortcuts } from '@/config/menuShortcuts';
 
-const SectionTitle = styled(Typography)(({ theme }) => ({
-  textAlign: 'center',
-  fontWeight: 600,
-  marginBottom: theme.spacing(4),
-  color: theme.palette.primary.main
-}));
-
 const ShortcutsContainer = styled(Box)(({ theme }) => ({
   paddingTop: theme.spacing(4),
   paddingBottom: theme.spacing(4),
@@ -38,7 +31,6 @@ const StyledLink = styled(Link)({
   textAlign: 'center',
 });
 
-
 const ShortcutTitle = styled(Typography)(({ theme }) => ({
   fontSize: 18,  
   color: theme.palette.grey[600],
@@ -46,34 +38,27 @@ const ShortcutTitle = styled(Typography)(({ theme }) => ({
   fontWeight: 600,
 }));
 
-interface MenuShortcutsProps {
-  title?: string;
-}
-
-export default function MenuShortcuts({ title = 'AI Maker Lab 메뉴 바로가기' }: MenuShortcutsProps) {
+export default function MenuShortcuts() {
   return (
     <ShortcutsContainer>
       <Container maxWidth="lg">
-  
-  
-
-  <StyledLink href="/" >
-    <Box sx={{ display: 'flex', alignItems: 'center' , mx:"auto" ,justifyContent:"center" }}>
-      <Typography variant="h5" component="span" sx={{ color: '#E53E3E', fontWeight: 'bold' }}>
-        AI Maker
-      </Typography>
-      <Typography variant="h5" component="span" sx={{ ml: 1 , fontWeight:"bold" }}>
-        Lab 메뉴 바로가기
-      </Typography>
-    </Box>
-  </StyledLink>
+        <StyledLink href="/" >
+          <Box sx={{ display: 'flex', alignItems: 'center' , mx:"auto" ,justifyContent:"center" }}>
+            <Typography variant="h5" component="span" sx={{ color: '#E53E3E', fontWeight: 'bold' }}>
+              AI Maker
+            </Typography>
+            <Typography variant="h5" component="span" sx={{ ml: 1 , fontWeight:"bold" }}>
+              Lab 메뉴 바로가기
+            </Typography>
+          </Box>
+        </StyledLink>
         
         <Stack 
           direction="row" 
           justifyContent="space-between" 
           sx={{ mt: 5, mx: 10 }}
         >
-          {menuShortcuts.map((shortcut, index) => {
+          {menuShortcuts.map((shortcut) => {
             const IconComponent = shortcut.icon;
             
             return (
