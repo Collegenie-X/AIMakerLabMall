@@ -16,5 +16,5 @@ urlpatterns = [
     path("verify-email/<str:token>/", VerifyEmailView.as_view(), name="verify-email"),
     path("token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("kakao/callback/", KakaoCallbackView.as_view(), name="kakao-callback"),
-    path("google/callback/", GoogleCallbackView.as_view(), name="google-callback"),
+    path("google/login/", GoogleCallbackView.as_view(), name="google-callback"),
 ]

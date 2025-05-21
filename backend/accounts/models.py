@@ -9,6 +9,7 @@ class User(AbstractUser):
     """
 
     email = models.EmailField(unique=True)
+    firebase_uid = models.CharField(max_length=128, null=True, blank=True, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     email_verified = models.BooleanField(default=False)
@@ -18,6 +19,11 @@ class User(AbstractUser):
 
     def __str__(self):
         return self.email
+
+    class Meta:
+        db_table = "accounts_user"
+        verbose_name = "User"
+        verbose_name_plural = "Users"
 
 
 class EmailVerificationToken(models.Model):

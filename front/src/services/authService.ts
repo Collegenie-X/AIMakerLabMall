@@ -38,6 +38,19 @@ const resetPassword = async (token: string, newPassword: string): Promise<void> 
   await axiosInstance.post('/auth/reset-password', { token, newPassword });
 };
 
+// Google 로그인 처리
+export const handleGoogleLogin = async (idToken: string): Promise<any> => {
+  try {
+    const response = await axiosInstance.post('/auth/google/login/', {
+      id_token: idToken
+    });
+    return response;
+  } catch (error) {
+    console.error('Error during Google login:', error);
+    throw error;
+  }
+};
+
 const authService = {
   login,
   signup,
@@ -47,4 +60,4 @@ const authService = {
   resetPassword
 };
 
-export default authService; 
+export default authService;
