@@ -11,8 +11,10 @@ import {
   Link,
   Box
 } from '@mui/material';
-import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { signInWithPopup } from 'firebase/auth';
 import { auth, googleProvider } from '@/lib/firebase';
+import * as authService from '@/services/authService';
+import Image from 'next/image';
 import { useUser } from '@/contexts/UserContext';
 import axios from 'axios';
 
@@ -50,49 +52,27 @@ export const LoginDialog = ({
   const handleGoogleLogin = async () => {
     try {
       const result = await signInWithPopup(auth, googleProvider);
-      const credential = GoogleAuthProvider.credentialFromResult(result);
-      
-      if (!credential) {
-        throw new Error('No credentials returned from Google');
-      }
-
-      // Get ID token
       const idToken = await result.user.getIdToken();
-      
-      // Send the ID token to your backend
-      const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/google/callback/`,
-        { id_token: idToken },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-          }
-        }
-      );
 
+      // 백엔드로 토큰 전송
+      const response = await authService.handleGoogleLogin(idToken);
+         
       if (response.status === 200 && response.data) {
-        // Store tokens and user data
-        localStorage.setItem('token', response.data.tokens.access);
-        localStorage.setItem('refresh_token', response.data.tokens.refresh);
-        localStorage.setItem('user', response.data.user.name);
-        
-        // Update global state
-        setUserName(response.data.user.name);
-        
-        // Close dialog
-        onClose();
-      }
+            // Store tokens and user data
+            localStorage.setItem('token', response.data.tokens.access);
+            localStorage.setItem('refresh_token', response.data.tokens.refresh);
+            localStorage.setItem('user', response.data.user.email);
+            
+            console.log('구글 로그인 성공:', response.data);
+            // Update global state
+            setUserName(response.data.user.email);
+            
+            // Redirect to home page
+            onClose(); 
+          }
     } catch (error) {
       console.error('Google login error:', error);
-      let errorMessage = '로그인 중 오류가 발생했습니다.';
-      
-      if (axios.isAxiosError(error)) {
-        errorMessage = error.response?.data?.error || errorMessage;
-      }
-      
-      // You might want to show an error message to the user here
-      // For example, you could set an error state and display it in the UI
-      setError(errorMessage);
+      setError('Google 로그인에 실패했습니다.');
     }
   };
 
@@ -192,4 +172,4 @@ export const LoginDialog = ({
   );
 };
 
-export default LoginDialog; 
+export default LoginDialog;

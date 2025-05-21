@@ -97,9 +97,9 @@ console.error('로그인 에러:', err);
 
 const handleLogout = async () => {
 try {
-const token = localStorage.getItem('token');
+const token = localStorage.getItem('refresh_token');
 await axios.post(
-'http://localhost:3000/api/v1/auth/logout/',
+'http://localhost:8000/api/v1/auth/logout/',
 { token },
 {
 headers: {
