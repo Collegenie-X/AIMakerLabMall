@@ -16,10 +16,13 @@ class Product(models.Model):
     description = models.TextField(
         help_text="상품 간단 설명"
     )
-    # product_detail_info = RichTextUploadingField(
-    #     config_name='product_detail',
-    #     help_text="관리자 페이지에서 HTML 에디터로 작성하는 상품 상세 설명"
-    # )
+    product_detail_info = RichTextUploadingField(
+        verbose_name='상세 설명',
+        config_name='product_detail',
+        help_text="관리자 페이지에서 HTML 에디터로 작성하는 상품 상세 설명",
+        blank=True,
+        null=True
+    )
     price = models.DecimalField(
         max_digits=10,
         decimal_places=2,
@@ -36,6 +39,7 @@ class Product(models.Model):
             ('out_of_stock', '품절'),
             ('discontinued', '단종')
         ],
+        default='available',
         help_text="상품 판매 상태"
     )
     created_at = models.DateTimeField(

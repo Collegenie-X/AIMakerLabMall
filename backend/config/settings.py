@@ -167,7 +167,7 @@ USE_TZ = True
 
 
 # Static files (CSS, JavaScript, Images)
-STATIC_URL = "static/"
+STATIC_URL = 'static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
 # Media files
@@ -175,8 +175,12 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # CKEditor settings
-CKEDITOR_UPLOAD_PATH = 'uploads/'
-CKEDITOR_IMAGE_BACKEND = 'pillow'
+CKEDITOR_BASEPATH = "/static/ckeditor/ckeditor/"
+CKEDITOR_UPLOAD_PATH = "uploads/"
+CKEDITOR_IMAGE_BACKEND = "pillow"
+CKEDITOR_JQUERY_URL = '//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js'
+CKEDITOR_FILENAME_GENERATOR = 'utils.get_filename'
+
 CKEDITOR_CONFIGS = {
     'default': {
         'toolbar': 'full',
@@ -185,16 +189,25 @@ CKEDITOR_CONFIGS = {
     },
     'product_detail': {
         'toolbar': [
-            ['Format', 'Bold', 'Italic', 'Underline', 'Strike'],
-            ['NumberedList', 'BulletedList', '-', 'Outdent', 'Indent', '-', 'JustifyLeft', 'JustifyCenter', 'JustifyRight', 'JustifyBlock'],
-            ['Image', 'Table'],
+            ['Format', 'Font', 'FontSize'],
+            ['Bold', 'Italic', 'Underline', 'Strike'],
+            ['TextColor', 'BGColor'],
+            ['NumberedList', 'BulletedList', '-', 'Outdent', 'Indent', '-', 'Blockquote'],
+            ['JustifyLeft', 'JustifyCenter', 'JustifyRight', 'JustifyBlock'],
             ['Link', 'Unlink'],
-            ['RemoveFormat', 'Source']
+            ['Image', 'Table', 'HorizontalRule', 'SpecialChar'],
+            ['RemoveFormat', 'Source'],
+            ['Maximize']
         ],
         'height': 400,
         'width': '100%',
         'removePlugins': 'stylesheetparser',
-        'extraPlugins': 'upload,image2',
+        'allowedContent': True,
+        'extraPlugins': 'justify,font',
+        'skin': 'moono-lisa',
+        'toolbarCanCollapse': True,
+        'mathJaxLib': '//cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-AMS_HTML',
+        'version': '4.25.1-lts',
     },
 }
 
