@@ -242,6 +242,8 @@ class GoogleCallbackView(APIView):
 
             # 사용자 정보 추출
             email = decoded_token.get("email")
+            firebase_uid = decoded_token.get("uid")  # Firebase UID 추출
+            
             if not email:
                 return Response(
                     {"error": "Email not found in token"},
@@ -251,15 +253,22 @@ class GoogleCallbackView(APIView):
             # 이름 정보 가져오기 (없으면 이메일 사용)
             name = decoded_token.get("name", email)
 
-            # 사용자 생성 또는 조회
-            user, created = User.objects.get_or_create(
-                email=email,
-                defaults={
-                    "username": email,
-                    "is_active": True,
-                    "email_verified": True,
-                },
-            )
+            # 기존 사용자 찾기
+            user = User.objects.filter(email=email).first()
+            
+            if user:
+                # 기존 사용자의 firebase_uid 업데이트
+                user.firebase_uid = firebase_uid
+                user.save()
+            else:
+                # 새 사용자 생성
+                user = User.objects.create(
+                    email=email,
+                    username=email,
+                    is_active=True,
+                    email_verified=True,
+                    firebase_uid=firebase_uid
+                )
 
             # JWT 토큰 생성
             refresh = RefreshToken.for_user(user)
@@ -284,5 +293,5 @@ class GoogleCallbackView(APIView):
         except Exception as e:
             return Response(
                 {"error": f"Google login failed: {str(e)}"},
-                status=status.HTTP_400_BAD_REQUEST,
+                status=status.HTTP_400_BAD_REQUEST
             )
