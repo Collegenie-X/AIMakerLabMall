@@ -5,26 +5,26 @@ import axiosInstance from './axiosInstance';
 import { Product, ProductFilter, ProductListResponse } from '../types/products';
 
 // 상품 목록 조회 API
-const getProducts = async (filter: ProductFilter): Promise<ProductListResponse> => {
-  const response = await axiosInstance.get<ProductListResponse>('/products', { params: filter });
+const getProducts = async (filter?: Partial<ProductFilter>): Promise<ProductListResponse> => {
+  const response = await axiosInstance.get('/products', { params: filter });
   return response.data;
 };
 
 // 상품 상세 조회 API
 const getProductById = async (id: string): Promise<Product> => {
-  const response = await axiosInstance.get<Product>(`/products/${id}`);
+  const response = await axiosInstance.get(`/products/${id}`);
   return response.data;
 };
 
 // 카테고리별 상품 목록 조회 API
-const getProductsByCategory = async (category: string, filter: Omit<ProductFilter, 'category'>): Promise<ProductListResponse> => {
-  const response = await axiosInstance.get<ProductListResponse>(`/products/category/${category}`, { params: filter });
+const getProductsByCategory = async (category: string, filter?: Omit<ProductFilter, 'category'>): Promise<ProductListResponse> => {
+  const response = await axiosInstance.get(`/products/category/${category}`, { params: filter });
   return response.data;
 };
 
 // 상품 검색 API
-const searchProducts = async (searchTerm: string, filter: Omit<ProductFilter, 'search'>): Promise<ProductListResponse> => {
-  const response = await axiosInstance.get<ProductListResponse>('/products/search', { 
+const searchProducts = async (searchTerm: string, filter?: Omit<ProductFilter, 'search'>): Promise<ProductListResponse> => {
+  const response = await axiosInstance.get('/products/search', { 
     params: { ...filter, search: searchTerm } 
   });
   return response.data;

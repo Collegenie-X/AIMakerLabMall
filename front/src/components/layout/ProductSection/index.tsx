@@ -4,6 +4,7 @@ import { Box, Container } from '@mui/material';
 import ProductCategory from '@/components/domain/ProductCategory';
 import ProductGrid from '@/components/domain/ProductGrid';
 import { Product } from '@/types/products';
+import { ReactNode } from 'react';
 
 interface ProductSectionProps {
   categoryTitle: string;
@@ -11,7 +12,7 @@ interface ProductSectionProps {
     label: string;
     url: string;
   }[];
-  products: Product[];
+  products: Product[] | ReactNode;
 }
 
 export default function ProductSection({ 
@@ -32,7 +33,11 @@ export default function ProductSection({
         
         {/* 오른쪽 제품 그리드 */}
         <Box sx={{ width: { xs: '100%', md: '75%' }}}>
-          <ProductGrid products={products} columns={3} />
+          {Array.isArray(products) ? (
+            <ProductGrid products={products} columns={3} />
+          ) : (
+            products
+          )}
         </Box>
       </Box>
     </Container>

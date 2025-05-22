@@ -7,64 +7,13 @@ import ProductSection from "@/components/layout/ProductSection";
 import BoardList from "@/components/domain/Board/BoardList";
 import Statistics from "@/components/domain/Statistics";
 import { Slide } from "@/services/slidesService";
+import ProductListContainer from "@/components/domain/ProductListContainer";
 
 // 카테고리 링크
 const categoryLinks = [
   { label: "수업자료 보기", url: "/resources" },
   { label: "지도 계획서 보기", url: "/plans" },
   { label: "소스 코드 다운로드", url: "/downloads" }
-];
-
-// 임시 제품 데이터
-const products = [
-  {
-    id: "1",
-    name: "언플러그드 DIY 컴퓨터 만들기",
-    imageUrl: "/images/product1.jpg",
-    price: 299000,
-    category: "초등학교추천",
-    duration: "2~3차시"
-  },
-  {
-    id: "2",
-    name: "언플러그드 DIY 컴퓨터 만들기",
-    imageUrl: "/images/product1.jpg",
-    price: 299000,
-    category: "초등학교추천",
-    duration: "2~3차시"
-  },
-  {
-    id: "3",
-    name: "언플러그드 DIY 컴퓨터 만들기",
-    imageUrl: "/images/product1.jpg",
-    price: 299000,
-    category: "초등학교추천",
-    duration: "2~3차시"
-  },
-  {
-    id: "4",
-    name: "언플러그드 DIY 컴퓨터 만들기",
-    imageUrl: "/images/product1.jpg",
-    price: 299000,
-    category: "초등학교추천",
-    duration: "2~3차시"
-  },
-  {
-    id: "5",
-    name: "언플러그드 DIY 컴퓨터 만들기",
-    imageUrl: "/images/product1.jpg",
-    price: 299000,
-    category: "초등학교추천",
-    duration: "2~3차시"
-  },  {
-    id: "6",
-    name: "언플러그드 DIY 컴퓨터 만들기",
-    imageUrl: "/images/product1.jpg",
-    price: 299000,
-    category: "초등학교추천",
-    duration: "2~3차시"
-  }
-
 ];
 
 // 게시판 데이터
@@ -101,7 +50,7 @@ export default function HomeContent({ slides }: HomeContentProps) {
       <ProductSection
         categoryTitle="학년별 & 주제별 베스트 키트 추천"
         categoryLinks={categoryLinks}
-        products={products}
+        products={<ProductListContainer title="교육 키트 목록" />}
       />
       <Container maxWidth="lg" sx={{ display: 'flex', gap: 3, mt: 4, px: 2, justifyContent: 'space-between' }}>
         <BoardList

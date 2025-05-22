@@ -4,7 +4,7 @@
 import axios from 'axios';
 
 // API 기본 URL 설정
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 // Axios 인스턴스 생성
 const axiosInstance = axios.create({
