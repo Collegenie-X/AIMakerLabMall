@@ -178,8 +178,9 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 CKEDITOR_BASEPATH = "/static/ckeditor/ckeditor/"
 CKEDITOR_UPLOAD_PATH = "uploads/"
 CKEDITOR_IMAGE_BACKEND = "pillow"
-CKEDITOR_JQUERY_URL = '//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js'
-CKEDITOR_FILENAME_GENERATOR = 'utils.get_filename'
+CKEDITOR_BROWSE_SHOW_DIRS = True
+CKEDITOR_RESTRICT_BY_DATE = True
+CKEDITOR_ALLOW_NONIMAGE_FILES = False  # 이미지 파일만 업로드 허용
 
 CKEDITOR_CONFIGS = {
     'default': {
@@ -203,11 +204,10 @@ CKEDITOR_CONFIGS = {
         'width': '100%',
         'removePlugins': 'stylesheetparser',
         'allowedContent': True,
-        'extraPlugins': 'justify,font',
+        'extraPlugins': 'justify,font,image2',
         'skin': 'moono-lisa',
         'toolbarCanCollapse': True,
-        'mathJaxLib': '//cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-AMS_HTML',
-        'version': '4.25.1-lts',
+        'filebrowserUploadMethod': 'form',
     },
 }
 
