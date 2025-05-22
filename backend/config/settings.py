@@ -169,18 +169,20 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = 'static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'staticfiles'),
+]
 
 # Media files
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # CKEditor settings
-CKEDITOR_BASEPATH = "/static/ckeditor/ckeditor/"
 CKEDITOR_UPLOAD_PATH = "uploads/"
 CKEDITOR_IMAGE_BACKEND = "pillow"
 CKEDITOR_BROWSE_SHOW_DIRS = True
 CKEDITOR_RESTRICT_BY_DATE = True
-CKEDITOR_ALLOW_NONIMAGE_FILES = False  # 이미지 파일만 업로드 허용
+CKEDITOR_FORCE_JPEG_COMPRESSION = True
 
 CKEDITOR_CONFIGS = {
     'default': {
@@ -190,25 +192,17 @@ CKEDITOR_CONFIGS = {
     },
     'product_detail': {
         'toolbar': [
-            ['Format', 'Font', 'FontSize'],
-            ['Bold', 'Italic', 'Underline', 'Strike'],
-            ['TextColor', 'BGColor'],
-            ['NumberedList', 'BulletedList', '-', 'Outdent', 'Indent', '-', 'Blockquote'],
-            ['JustifyLeft', 'JustifyCenter', 'JustifyRight', 'JustifyBlock'],
+            ['Format', 'Bold', 'Italic', 'Underline', 'Strike'],
+            ['NumberedList', 'BulletedList', '-', 'Outdent', 'Indent', '-', 'JustifyLeft', 'JustifyCenter', 'JustifyRight', 'JustifyBlock'],
+            ['Image', 'Table'],
             ['Link', 'Unlink'],
-            ['Image', 'Table', 'HorizontalRule', 'SpecialChar'],
-            ['RemoveFormat', 'Source'],
-            ['Maximize']
+            ['Source']
         ],
         'height': 400,
         'width': '100%',
         'removePlugins': 'stylesheetparser',
         'allowedContent': True,
-        'extraPlugins': 'justify,font,image2',
-        'skin': 'moono-lisa',
-        'toolbarCanCollapse': True,
-        'filebrowserUploadMethod': 'form',
-    },
+    }
 }
 
 # Default primary key field type

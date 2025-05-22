@@ -9,3 +9,8 @@ python3.13 -m venv venv
     #     config_name='product_detail',
     #     help_text="관리자 페이지에서 HTML 에디터로 작성하는 상품 상세 설명"
     # )
+
+    mkdir -p staticfiles && python manage.py collectstatic --noinput
+
+python manage.py collectstatic --noinput
+
