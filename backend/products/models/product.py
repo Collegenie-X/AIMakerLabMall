@@ -1,5 +1,7 @@
 from django.db import models
 from ckeditor_uploader.fields import RichTextUploadingField
+from .category import Category
+from .tag import Tag
 
 class Product(models.Model):
     """
@@ -9,9 +11,17 @@ class Product(models.Model):
         max_length=200,
         help_text="상품명 (예: 언플러그드 DIY 컴퓨터 만들기)"
     )
-    category = models.CharField(
-        max_length=50,
-        help_text="상품 카테고리 (예: 초등학교 교육)"
+    category = models.ForeignKey(
+        Category,
+        on_delete=models.PROTECT,
+        related_name='products',
+        verbose_name='카테고리'
+    )
+    tags = models.ManyToManyField(
+        Tag,
+        related_name='products',
+        blank=True,
+        verbose_name='태그'
     )
     description = models.TextField(
         help_text="상품 간단 설명"
