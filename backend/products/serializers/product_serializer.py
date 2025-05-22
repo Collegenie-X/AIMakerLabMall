@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from ..models import Product, ProductImage
+from ..models import Product, ProductImage, Category, Tag
 
 class ProductImageSerializer(serializers.ModelSerializer):
     class Meta:
@@ -16,11 +16,13 @@ class ProductImageSerializer(serializers.ModelSerializer):
 
 class ProductListSerializer(serializers.ModelSerializer):
     thumbnail = serializers.SerializerMethodField()
+    category = serializers.CharField(source='category.name')
+    tags = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
         fields = [
-            'id', 'name', 'category', 'thumbnail',
+            'id', 'name', 'category', 'thumbnail', 'tags',
             'price', 'duration', 'status', 'created_at'
         ]
 
@@ -31,13 +33,21 @@ class ProductListSerializer(serializers.ModelSerializer):
             return request.build_absolute_uri(thumbnail_image.image.url) if request else thumbnail_image.image.url
         return None
 
+    def get_tags(self, obj):
+        return [tag.name for tag in obj.tags.all()]
+
 class ProductDetailSerializer(serializers.ModelSerializer):
     images = ProductImageSerializer(many=True, read_only=True)
+    category = serializers.CharField(source='category.name')
+    tags = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
         fields = [
             'id', 'name', 'category', 'description',
             'product_detail_info', 'price', 'duration',
-            'status', 'images', 'created_at', 'updated_at'
-        ] 
+            'status', 'images', 'tags', 'created_at', 'updated_at'
+        ]
+    
+    def get_tags(self, obj):
+        return [tag.name for tag in obj.tags.all()] 
