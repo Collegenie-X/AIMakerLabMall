@@ -7,18 +7,21 @@ import {
   Paper,
   Typography,
   Divider,
+  Tooltip,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
 
 interface ProductPurchaseBoxProps {
+  productId: number;
   price: number;
-  shipping: number;
+  status: string;
 }
 
 export default function ProductPurchaseBox({
+  productId,
   price,
-  shipping,
+  status,
 }: ProductPurchaseBoxProps) {
   const [quantity, setQuantity] = useState(1);
 
@@ -35,7 +38,24 @@ export default function ProductPurchaseBox({
   };
 
   // 총 금액 계산
-  const totalPrice = price * quantity + shipping;
+  const totalPrice = price * quantity;
+  
+  // 상품 상태에 따른 구매 버튼 비활성화 여부
+  const isAvailable = status === 'available';
+
+  // 장바구니 추가 핸들러
+  const handleAddToCart = () => {
+    console.log(`장바구니에 상품 추가: ${productId}, 수량: ${quantity}`);
+    // TODO: 장바구니 추가 API 호출
+    alert('장바구니에 추가되었습니다.');
+  };
+
+  // 구매하기 핸들러
+  const handlePurchase = () => {
+    console.log(`상품 구매: ${productId}, 수량: ${quantity}`);
+    // TODO: 구매 페이지로 이동 또는 구매 API 호출
+    alert('구매 페이지로 이동합니다.');
+  };
 
   return (
     <Paper elevation={3} sx={{ p: 2, borderRadius: 2 }}>
@@ -46,14 +66,18 @@ export default function ProductPurchaseBox({
           <IconButton
             size="small"
             onClick={handleDecrease}
-            disabled={quantity === 1}
+            disabled={quantity === 1 || !isAvailable}
           >
             <RemoveIcon />
           </IconButton>
           <Typography sx={{ minWidth: 40, textAlign: 'center' }}>
             {quantity}
           </Typography>
-          <IconButton size="small" onClick={handleIncrease}>
+          <IconButton 
+            size="small" 
+            onClick={handleIncrease}
+            disabled={!isAvailable}
+          >
             <AddIcon />
           </IconButton>
         </Box>
@@ -65,11 +89,11 @@ export default function ProductPurchaseBox({
       <Box sx={{ mb: 2 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
           <Typography>상품금액</Typography>
-          <Typography>{(price * quantity).toLocaleString()}원</Typography>
+          <Typography>{price.toLocaleString()}원</Typography>
         </Box>
         <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-          <Typography>배송비</Typography>
-          <Typography>{shipping.toLocaleString()}원</Typography>
+          <Typography>수량</Typography>
+          <Typography>{quantity}개</Typography>
         </Box>
       </Box>
 
@@ -92,21 +116,37 @@ export default function ProductPurchaseBox({
 
       {/* 구매 버튼 */}
       <Box sx={{ display: 'flex', gap: 1 }}>
-        <Button
-          variant="outlined"
-          fullWidth
-          sx={{ flex: 1 }}
-        >
-          장바구니
-        </Button>
-        <Button
-          variant="contained"
-          fullWidth
-          sx={{ flex: 2 }}
-        >
-          구매하기
-        </Button>
+        <Tooltip title={!isAvailable ? "현재 구매할 수 없는 상품입니다" : ""}>
+          <span style={{ flex: 1 }}>
+            <Button
+              variant="outlined"
+              fullWidth
+              disabled={!isAvailable}
+              onClick={handleAddToCart}
+            >
+              장바구니
+            </Button>
+          </span>
+        </Tooltip>
+        <Tooltip title={!isAvailable ? "현재 구매할 수 없는 상품입니다" : ""}>
+          <span style={{ flex: 2 }}>
+            <Button
+              variant="contained"
+              fullWidth
+              disabled={!isAvailable}
+              onClick={handlePurchase}
+            >
+              구매하기
+            </Button>
+          </span>
+        </Tooltip>
       </Box>
+      
+      {!isAvailable && (
+        <Typography color="error" sx={{ mt: 2, textAlign: 'center' }}>
+          현재 구매할 수 없는 상품입니다.
+        </Typography>
+      )}
     </Paper>
   );
 } 
