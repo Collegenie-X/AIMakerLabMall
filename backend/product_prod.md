@@ -274,3 +274,16 @@ urlpatterns = [
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) 
 
 
+cd front 
+npm run dev
+
+
+venv/Scripts/activate
+cd backend
+python manage.py runserver 
+
+pip install -r requrements.txt
+python manage.py migrate  
+
+python manage.py runserver 
+
