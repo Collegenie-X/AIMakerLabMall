@@ -167,15 +167,15 @@ USE_TZ = True
 
 
 # Static files (CSS, JavaScript, Images)
-STATIC_URL = 'static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+STATIC_URL = "static/"
+STATIC_ROOT = os.path.join(BASE_DIR, "static")
 STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'staticfiles'),
+    os.path.join(BASE_DIR, "staticfiles"),
 ]
 
 # Media files
-MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+MEDIA_URL = "/media/"
+MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
 # CKEditor settings
 CKEDITOR_UPLOAD_PATH = "uploads/"
@@ -185,24 +185,35 @@ CKEDITOR_RESTRICT_BY_DATE = True
 CKEDITOR_FORCE_JPEG_COMPRESSION = True
 
 CKEDITOR_CONFIGS = {
-    'default': {
-        'toolbar': 'full',
-        'height': 300,
-        'width': '100%',
+    "default": {
+        "toolbar": "full",
+        "height": 300,
+        "width": "100%",
     },
-    'product_detail': {
-        'toolbar': [
-            ['Format', 'Bold', 'Italic', 'Underline', 'Strike'],
-            ['NumberedList', 'BulletedList', '-', 'Outdent', 'Indent', '-', 'JustifyLeft', 'JustifyCenter', 'JustifyRight', 'JustifyBlock'],
-            ['Image', 'Table'],
-            ['Link', 'Unlink'],
-            ['Source']
+    "product_detail": {
+        "toolbar": [
+            ["Format", "Bold", "Italic", "Underline", "Strike"],
+            [
+                "NumberedList",
+                "BulletedList",
+                "-",
+                "Outdent",
+                "Indent",
+                "-",
+                "JustifyLeft",
+                "JustifyCenter",
+                "JustifyRight",
+                "JustifyBlock",
+            ],
+            ["Image", "Table"],
+            ["Link", "Unlink"],
+            ["Source"],
         ],
-        'height': 400,
-        'width': '100%',
-        'removePlugins': 'stylesheetparser',
-        'allowedContent': True,
-    }
+        "height": 400,
+        "width": "100%",
+        "removePlugins": "stylesheetparser",
+        "allowedContent": True,
+    },
 }
 
 # Default primary key field type
@@ -221,13 +232,15 @@ KAKAO_CLIENT_ID = os.environ.get("KAKAO_CLIENT_ID")
 KAKAO_CLIENT_SECRET = os.environ.get("KAKAO_CLIENT_SECRET")
 KAKAO_REDIRECT_URI = os.environ.get("KAKAO_REDIRECT_URI")
 
-# Firebase Admin SDK는 서비스 계정 키 파일을 사용하므로 여기서는 설정이 필요 없습니다.
-# firebase_admin.py에서 초기화됩니다.
-
-# Firebase Admin SDK settings
+# Firebase 설정
 FIREBASE_SERVICE_ACCOUNT_PATH = os.path.join(BASE_DIR, "firebase-service-account.json")
+
+# Firebase 서비스 계정 키 파일이 없으면 환경 변수에서 가져오기
 if not os.path.exists(FIREBASE_SERVICE_ACCOUNT_PATH):
-    raise FileNotFoundError(
-        f"Firebase service account file not found at {FIREBASE_SERVICE_ACCOUNT_PATH}. "
-        "Please add your firebase-service-account.json file to the backend directory."
-    )
+    FIREBASE_SERVICE_ACCOUNT_PATH = os.getenv("FIREBASE_SERVICE_ACCOUNT_PATH")
+    if not FIREBASE_SERVICE_ACCOUNT_PATH:
+        raise FileNotFoundError(
+            "Firebase 서비스 계정 키 파일 경로가 설정되지 않았습니다. "
+            "FIREBASE_SERVICE_ACCOUNT_PATH 환경 변수를 설정하거나 "
+            "firebase-service-account.json 파일을 추가해주세요."
+        )

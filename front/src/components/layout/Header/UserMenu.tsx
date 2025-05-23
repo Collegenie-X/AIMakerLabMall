@@ -34,7 +34,10 @@ export const UserMenu = ({ userName, onLogout }: UserMenuProps) => {
       <Button
         color="inherit"
         onClick={handleClick}
-        sx={{ fontWeight: 'bold' }}
+        sx={{ 
+          fontWeight: 'bold',
+          textTransform: 'none'  // 대문자 변환 방지
+        }}
       >
         {userName}
       </Button>
