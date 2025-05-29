@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     "ckeditor",
     "ckeditor_uploader",
     "products",
+    "inquiries",
 ]
 
 REST_FRAMEWORK = {
