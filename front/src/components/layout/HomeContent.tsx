@@ -6,14 +6,15 @@ import { useRouter } from 'next/navigation';
 import HeroBanner from "@/components/domain/HeroBanner";
 import MenuShortcuts from "@/components/domain/MenuShortcuts";
 import ProductSection from "@/components/layout/ProductSection";
-import BoardList, { BoardItem } from "@/components/domain/Board/BoardList";
+import { BoardItem } from "@/components/domain/Board/BoardList";
 import Statistics from "@/components/domain/Statistics";
 import { Slide } from "@/services/slidesService";
 import ProductListContainer from "@/components/domain/ProductListContainer";
-import { getInquiries } from "@/services/inquiryService";
+import { getInquiries, getPaginatedInquiries } from "@/services/inquiryService";
 import InquiryDialog from "@/components/domain/Board/InquiryDialog";
-import { getLessonInquiries } from "@/services/lessonService";
+import { getLessonInquiries, getPaginatedLessonInquiries } from "@/services/lessonService";
 import LessonInquiryDialog from "@/components/domain/Board/LessonInquiryDialog";
+import PaginatedBoardList from "@/components/domain/Board/PaginatedBoardList";
 
 // 카테고리 링크
 const categoryLinks = [
@@ -37,6 +38,12 @@ interface HomeContentProps {
   slides: Slide[];
 }
 
+/**
+ * 홈페이지 메인 컨텐츠 컴포넌트
+ * 
+ * @param slides - 슬라이드 이미지 데이터
+ * @returns 홈페이지 메인 컨텐츠 컴포넌트
+ */
 export default function HomeContent({ slides }: HomeContentProps) {
   const router = useRouter();
   
@@ -63,7 +70,8 @@ export default function HomeContent({ slides }: HomeContentProps) {
   const fetchInquiries = async () => {
     try {
       setIsInquiryLoading(true);
-      const response = await getInquiries();
+      // 페이지네이션 적용된 데이터 가져오기
+      const response = await getPaginatedInquiries(1, 10);
       
       // API 응답을 BoardItem 형식으로 변환
       const formattedItems: BoardItem[] = response.results.map(inquiry => ({
@@ -87,7 +95,8 @@ export default function HomeContent({ slides }: HomeContentProps) {
   const fetchLessonInquiries = async () => {
     try {
       setIsLessonLoading(true);
-      const response = await getLessonInquiries();
+      // 페이지네이션 적용된 데이터 가져오기
+      const response = await getPaginatedLessonInquiries(1, 10);
       
       // API 응답을 BoardItem 형식으로 변환
       const formattedItems: BoardItem[] = response.results.map(inquiry => ({
@@ -128,18 +137,18 @@ export default function HomeContent({ slides }: HomeContentProps) {
         products={<ProductListContainer title="교육 키트 목록" />}
       />
       <Container maxWidth="lg" sx={{ display: 'flex', gap: 3, mt: 4, px: 2, justifyContent: 'space-between' }}>
-        <BoardList
+        <PaginatedBoardList
           title="교육 키트 구매 견적 문의"
           items={isInquiryLoading ? [] : inquiryItems}
           onAddClick={handleAddInquiry}
-          maxItems={5}
+          itemsPerPage={5}
           baseUrl="/inquiries"
         />
-        <BoardList
+        <PaginatedBoardList
           title="코딩 출강 및 수업 문의"
           items={isLessonLoading ? [] : lessonItems}
           onAddClick={handleAddLessonInquiry}
-          maxItems={5}
+          itemsPerPage={5}
           baseUrl="/lessons"
         />
       </Container>

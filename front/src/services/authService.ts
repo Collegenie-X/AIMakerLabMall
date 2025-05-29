@@ -113,7 +113,7 @@ const resetPassword = async (token: string, newPassword: string): Promise<void> 
 // Google 로그인 처리
 export const handleGoogleLogin = async (idToken: string): Promise<any> => {
   try {
-    const response = await axios.post(`${API_URL}/api/v1/auth/google/login/`, {
+    const response = await axios.post(`${API_URL}/auth/google/login/`, {
       id_token: idToken
     });
     return response;
