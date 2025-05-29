@@ -22,25 +22,31 @@ class InquiryPagination(PageNumberPagination):
 
 
 @api_view(['GET'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def get_inquiry_list(request):
     """
     견적 문의 목록을 조회하는 함수
     
     검색 기능과 페이지네이션을 지원합니다.
     검색어가 제공되면 제목이나 요청자 이름으로 필터링합니다.
-    모든 사용자가 접근 가능합니다.
+    일반 사용자는 자신의 문의만 볼 수 있고, 관리자는 모든 문의를 볼 수 있습니다.
     """
     search_query = request.query_params.get('search', '')
     
+    # 관리자가 아니면 자신의 문의만 볼 수 있음
+    if not request.user.is_staff:
+        base_queryset = Inquiry.objects.filter(user=request.user)
+    else:
+        base_queryset = Inquiry.objects.all()
+    
     # 검색어가 있을 경우 제목이나 요청자 이름으로 필터링
     if search_query:
-        inquiries = Inquiry.objects.filter(
+        inquiries = base_queryset.filter(
             Q(title__icontains=search_query) | 
             Q(requester_name__icontains=search_query)
         )
     else:
-        inquiries = Inquiry.objects.all()
+        inquiries = base_queryset
     
     # 페이지네이션 적용
     paginator = InquiryPagination()
@@ -51,13 +57,13 @@ def get_inquiry_list(request):
 
 
 @api_view(['GET'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def get_inquiry_detail(request, pk):
     """
     특정 견적 문의의 상세 정보를 조회하는 함수
     
     주어진 ID에 해당하는 견적 문의가 없으면 404 에러를 반환합니다.
-    모든 사용자가 접근 가능합니다.
+    로그인한 사용자 중 작성자나 관리자만 조회할 수 있습니다.
     """
     try:
         inquiry = Inquiry.objects.get(pk=pk)
@@ -65,6 +71,13 @@ def get_inquiry_detail(request, pk):
         return Response(
             {"error": "견적 문의를 찾을 수 없습니다."},
             status=status.HTTP_404_NOT_FOUND
+        )
+    
+    # 작성자나 관리자만 조회 가능
+    if not (inquiry.is_owner(request.user) or request.user.is_staff):
+        return Response(
+            {"error": "이 문의를 조회할 권한이 없습니다."},
+            status=status.HTTP_403_FORBIDDEN
         )
     
     serializer = InquirySerializer(inquiry, context={'request': request})

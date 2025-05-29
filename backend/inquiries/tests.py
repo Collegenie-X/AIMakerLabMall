@@ -107,16 +107,51 @@ class InquiryAPITest(TestCase):
     def test_get_inquiry_list(self):
         """견적 문의 목록 조회 테스트 함수"""
         url = reverse('inquiries:inquiry-list')
-        response = self.client.get(url)
         
+        # 비인증 사용자는 접근 불가
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        
+        # 일반 사용자는 자신의 문의만 볼 수 있음
+        self.client.force_authenticate(user=self.user)
+        response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['count'], 1)
+        self.assertEqual(response.data['count'], 1)  # 자신의 문의 1개만 조회됨
+        
+        # 다른 사용자는 자신의 문의가 없으므로 0개 조회
+        self.client.force_authenticate(user=self.other_user)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['count'], 0)  # 자신의 문의가 없음
+        
+        # 관리자는 모든 문의를 볼 수 있음
+        self.client.force_authenticate(user=self.admin_user)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['count'], 1)  # 전체 문의 1개 조회
 
     def test_get_inquiry_detail(self):
         """견적 문의 상세 조회 테스트 함수"""
         url = reverse('inquiries:inquiry-detail', args=[self.inquiry.pk])
-        response = self.client.get(url)
         
+        # 비인증 사용자는 접근 불가
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        
+        # 다른 사용자는 접근 불가
+        self.client.force_authenticate(user=self.other_user)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        
+        # 작성자는 조회 가능
+        self.client.force_authenticate(user=self.user)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['title'], self.inquiry_data['title'])
+        
+        # 관리자도 조회 가능
+        self.client.force_authenticate(user=self.admin_user)
+        response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['title'], self.inquiry_data['title'])
 
