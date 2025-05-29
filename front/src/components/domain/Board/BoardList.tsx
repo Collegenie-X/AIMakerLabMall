@@ -1,96 +1,165 @@
 'use client';
 
-import { Box, Typography, List, ListItem, IconButton } from '@mui/material';
-import { Key as KeyIcon, Add as AddIcon } from '@mui/icons-material';
+import React from 'react';
+import { useRouter } from 'next/navigation';
+import { Card, CardContent, CardHeader, Typography, List, ListItem, ListItemIcon, ListItemText, IconButton, Box } from '@mui/material';
+import KeyIcon from '@mui/icons-material/Key';
+import AddCircleIcon from '@mui/icons-material/AddCircle';
+import ForumIcon from '@mui/icons-material/Forum';
+import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
+import SchoolIcon from '@mui/icons-material/School';
+import { formatDate } from '@/utils/dateUtils';
 
-interface BoardItem {
-  icon: React.ReactNode;
-  category: string;
+// 아이콘 매핑
+const iconMap: Record<string, React.ReactNode> = {
+  'key': <KeyIcon />,
+  'forum': <ForumIcon />,
+  'cart': <ShoppingCartIcon />,
+  'school': <SchoolIcon />,
+  'product': <ShoppingCartIcon color="primary" />,
+  'price': <KeyIcon color="secondary" />,
+  'delivery': <ForumIcon color="action" />,
+  'etc': <SchoolIcon color="warning" />
+};
+
+// 문의 유형 한글 매핑
+const inquiryTypeMap: Record<string, string> = {
+  'product': '교구문의',
+  'price': '가격문의',
+  'delivery': '배송문의',
+  'etc': '기타문의'
+};
+
+export interface BoardItem {
+  id?: number;
+  icon?: string;
+  category?: string;
+  inquiry_type?: string;
   title: string;
-  date: string;
-  author: string;
+  date?: string;
+  created_at?: string;
+  author?: string;
+  requester_name?: string;
 }
 
 interface BoardListProps {
   title: string;
   items: BoardItem[];
-  onAddClick?: () => void;
+  onAddClick: () => void;
+  maxItems?: number;
+  baseUrl?: string;
 }
 
-const BoardList = ({ title, items, onAddClick }: BoardListProps) => {
-  return (
-    <Box
-      sx={{
-        padding: 2,
-        backgroundColor: '#fff',
-        borderRadius: 1,
-        boxShadow: 1,
-        marginBottom: 3,        
-      }}
-    >
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: 2,          
-          width: 500,
-        }}
-      >
-        <Typography variant="h6" component="h2">
-          {title}
-        </Typography>
-        <IconButton onClick={onAddClick} color="primary">
-          <AddIcon />
-        </IconButton>
-      </Box>
-      < List >
-        {items.map((item, index) => (
-          <ListItem
-            key={index}
-            component="div"
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              padding: 1.5,
-              cursor: 'pointer',
-              '&:hover': {
-                backgroundColor: 'action.hover',
-              },
-            }}
-          >
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                flex: 1,
-                '& > *:not(:last-child)': {
-                  marginRight: 1,
-                },
-              }}
-            >
-              <KeyIcon color="action" />
-              <Typography variant="body2" color="text.secondary">
-                {item.category} |
-              </Typography>
-              <Typography variant="body1">
-                {item.title}
-              </Typography>
-              <Typography
-                variant="body2"
-                sx={{
-                  marginLeft: 'auto',
-                  color: '#666',
-                }}
-              >
-                {item.date} {item.author}
-              </Typography>
-            </Box>
-          </ListItem>
-        ))}
-      </List>
-    </Box>
-  );
-};
+export default function BoardList({ 
+  title, 
+  items, 
+  onAddClick, 
+  maxItems = 5,
+  baseUrl = '/inquiries'
+}: BoardListProps) {
+  const router = useRouter();
+  
+  // 최대 표시 개수만큼만 아이템 제한
+  const displayItems = items.slice(0, maxItems);
+  
+  // 아이템 클릭 시 상세 페이지로 이동
+  const handleItemClick = (id?: number) => {
+    if (id) {
+      router.push(`${baseUrl}/${id}`);
+    }
+  };
 
-export default BoardList; 
+  return (
+    <Card sx={{ width: '100%', boxShadow: 2 }}>
+      <CardHeader 
+        title={
+          <Box display="flex" alignItems="center" justifyContent="space-between">
+            <Typography variant="h6" component="div">
+              {title}
+            </Typography>
+            <IconButton 
+              color="primary" 
+              onClick={onAddClick}
+              aria-label="글 작성하기"
+            >
+              <AddCircleIcon />
+            </IconButton>
+          </Box>
+        }
+      />
+      <CardContent sx={{ pt: 0 }}>
+        <List sx={{ p: 0 }}>
+          {displayItems.length > 0 ? (
+            displayItems.map((item, index) => (
+              <ListItem 
+                key={item.id || index}
+                divider={index < displayItems.length - 1}
+                sx={{ 
+                  py: 1,
+                  cursor: 'pointer',
+                  '&:hover': { bgcolor: 'action.hover' }
+                }}
+                onClick={() => handleItemClick(item.id)}
+              >
+                <ListItemIcon sx={{ minWidth: 40 }}>
+                  {iconMap[item.icon || item.inquiry_type || 'forum']}
+                </ListItemIcon>
+                <ListItemText
+                  primary={
+                    <Box display="flex" alignItems="center" gap={1}>
+                      <Typography
+                        component="span"
+                        variant="caption"
+                        sx={{
+                          color: 'text.secondary',
+                          bgcolor: 'action.selected',
+                          px: 1,
+                          py: 0.5,
+                          borderRadius: 1,
+                          whiteSpace: 'nowrap'
+                        }}
+                      >
+                        {item.category || inquiryTypeMap[item.inquiry_type || ''] || '문의'}
+                      </Typography>
+                      <Typography
+                        component="span"
+                        variant="body2"
+                        sx={{
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap'
+                        }}
+                      >
+                        {item.title}
+                      </Typography>
+                    </Box>
+                  }
+                  secondary={
+                    <Box display="flex" justifyContent="space-between" mt={0.5}>
+                      <Typography variant="caption" color="text.secondary">
+                        {item.date || (item.created_at && formatDate(item.created_at)) || '날짜 없음'}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {item.author || item.requester_name || '작성자 없음'}
+                      </Typography>
+                    </Box>
+                  }
+                />
+              </ListItem>
+            ))
+          ) : (
+            <ListItem>
+              <ListItemText
+                primary={
+                  <Typography variant="body2" color="text.secondary" align="center">
+                    게시물이 없습니다
+                  </Typography>
+                }
+              />
+            </ListItem>
+          )}
+        </List>
+      </CardContent>
+    </Card>
+  );
+} 
