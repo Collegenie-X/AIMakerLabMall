@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import axios from 'axios';
 import { useUser } from '@/contexts/UserContext';
 
+const KAKAO_AUTH_URL = `https://kauth.kakao.com/oauth/authorize?client_id=${process.env.NEXT_PUBLIC_KAKAO_CLIENT_ID}&redirect_uri=${process.env.NEXT_PUBLIC_KAKAO_REDIRECT_URI}&response_type=code&scope=profile_nickname,account_email`;
+
 export default function KakaoCallbackHandler() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -36,13 +38,15 @@ export default function KakaoCallbackHandler() {
           console.log('Backend response:', response.data);
           
           if (response.status === 200 && response.data) {
+            console.log('Backend response:', response.data);
+            
             // Store tokens and user data
             localStorage.setItem('token', response.data.tokens.access);
             localStorage.setItem('refresh_token', response.data.tokens.refresh);
-            localStorage.setItem('user', response.data.user.name);
+            localStorage.setItem('user', response.data.user.name || response.data.user.email);
             
             // Update global state
-            setUserName(response.data.user.name);
+            setUserName(response.data.user.name || response.data.user.email);
             
             // Redirect to home page
             router.replace('/');

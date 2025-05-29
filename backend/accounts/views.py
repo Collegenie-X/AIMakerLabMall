@@ -181,7 +181,7 @@ class KakaoCallbackView(APIView):
             user_data = user_response.json()
             print(f"Kakao user info response: {user_data}")
 
-            kakao_account = user_data.get("kakao_account")
+            kakao_account = user_data.get("kakao_account", {})
             if not kakao_account:
                 return Response(
                     {"error": "Failed to get Kakao account info"},
@@ -195,12 +195,25 @@ class KakaoCallbackView(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
+            # 카카오 프로필 정보 가져오기
+            profile = kakao_account.get("profile", {})
+            nickname = profile.get("nickname")
+            profile_image = profile.get("profile_image_url")
+
             # Get or create user
             user, created = User.objects.get_or_create(
                 email=email,
-                defaults={"username": email, "is_active": True, "email_verified": True},
+                defaults={
+                    "username": email,
+                    "is_active": True,
+                    "email_verified": True,
+                    "first_name": nickname or "",
+                },
             )
-            print(f"User {'created' if created else 'found'} with email: {email}")
+
+            if not created and nickname and not user.first_name:
+                user.first_name = nickname
+                user.save()
 
             # Generate JWT tokens
             refresh = RefreshToken.for_user(user)
@@ -213,7 +226,8 @@ class KakaoCallbackView(APIView):
                     },
                     "user": {
                         "email": user.email,
-                        "name": user.get_full_name() or user.email,
+                        "name": nickname or user.email,
+                        "profile_image": profile_image,
                     },
                 }
             )
@@ -243,7 +257,7 @@ class GoogleCallbackView(APIView):
             # 사용자 정보 추출
             email = decoded_token.get("email")
             firebase_uid = decoded_token.get("uid")  # Firebase UID 추출
-            
+
             if not email:
                 return Response(
                     {"error": "Email not found in token"},
@@ -255,7 +269,7 @@ class GoogleCallbackView(APIView):
 
             # 기존 사용자 찾기
             user = User.objects.filter(email=email).first()
-            
+
             if user:
                 # 기존 사용자의 firebase_uid 업데이트
                 user.firebase_uid = firebase_uid
@@ -267,7 +281,7 @@ class GoogleCallbackView(APIView):
                     username=email,
                     is_active=True,
                     email_verified=True,
-                    firebase_uid=firebase_uid
+                    firebase_uid=firebase_uid,
                 )
 
             # JWT 토큰 생성
@@ -293,5 +307,5 @@ class GoogleCallbackView(APIView):
         except Exception as e:
             return Response(
                 {"error": f"Google login failed: {str(e)}"},
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )

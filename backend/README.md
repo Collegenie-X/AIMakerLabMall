@@ -1,6 +1,15 @@
 ##가상
 python3.13 -m venv venv
+
+
+ls
 .\venv\Scripts\activate
+
+python manage.py runserver
+
+
+cd front
+npm run dev 
 
 
 @product_prod.md  기준으로 backend 폴더에 app products를 구성해 주세요.  REST API, Admin 페이지 둘다 구성해 주세요.  

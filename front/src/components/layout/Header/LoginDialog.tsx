@@ -46,33 +46,44 @@ export const LoginDialog = ({
 
   const handleKakaoLogin = () => {
     const KAKAO_AUTH_URL = `https://kauth.kakao.com/oauth/authorize?client_id=${process.env.NEXT_PUBLIC_KAKAO_CLIENT_ID}&redirect_uri=${process.env.NEXT_PUBLIC_KAKAO_REDIRECT_URI}&response_type=code`;
+    console.log('카카오 로그인 URL:', KAKAO_AUTH_URL);
     window.location.href = KAKAO_AUTH_URL;
   };
 
   const handleGoogleLogin = async () => {
     try {
+      // Firebase 팝업으로 Google 로그인
       const result = await signInWithPopup(auth, googleProvider);
       const idToken = await result.user.getIdToken();
-
-      // 백엔드로 토큰 전송
+      
+      console.log('Google 로그인 성공, ID 토큰 획득');
+      
+      // 백엔드로 ID 토큰 전송
       const response = await authService.handleGoogleLogin(idToken);
-         
-      if (response.status === 200 && response.data) {
-            // Store tokens and user data
-            localStorage.setItem('token', response.data.tokens.access);
-            localStorage.setItem('refresh_token', response.data.tokens.refresh);
-            localStorage.setItem('user', response.data.user.email);
-            
-            console.log('구글 로그인 성공:', response.data);
-            // Update global state
-            setUserName(response.data.user.email);
-            
-            // Redirect to home page
-            onClose(); 
-          }
-    } catch (error) {
-      console.error('Google login error:', error);
-      setError('Google 로그인에 실패했습니다.');
+      
+      if (response.data) {
+        console.log('백엔드 인증 성공:', response.data);
+        
+        // 토큰과 사용자 정보 저장
+        localStorage.setItem('token', response.data.tokens.access);
+        localStorage.setItem('refresh_token', response.data.tokens.refresh);
+        localStorage.setItem('user', response.data.user.email);
+        
+        // 전역 상태 업데이트
+        setUserName(response.data.user.email);
+        
+        // 다이얼로그 닫기
+        onClose();
+      }
+    } catch (error: any) {
+      console.error('Google 로그인 에러:', error);
+      if (error.code === 'auth/popup-closed-by-user') {
+        setError('로그인이 취소되었습니다.');
+      } else if (error.response?.data?.error) {
+        setError(error.response.data.error);
+      } else {
+        setError('Google 로그인에 실패했습니다.');
+      }
     }
   };
 
