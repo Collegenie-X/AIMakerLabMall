@@ -11,6 +11,7 @@ import Statistics from "@/components/domain/Statistics";
 import { Slide } from "@/services/slidesService";
 import ProductListContainer from "@/components/domain/ProductListContainer";
 import { getInquiries } from "@/services/inquiryService";
+import InquiryDialog from "@/components/domain/Board/InquiryDialog";
 
 // 카테고리 링크
 const categoryLinks = [
@@ -38,41 +39,45 @@ export default function HomeContent({ slides }: HomeContentProps) {
   const router = useRouter();
   const [inquiryItems, setInquiryItems] = useState<BoardItem[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-
+  
+  // 다이얼로그 상태 관리
+  const [inquiryDialogOpen, setInquiryDialogOpen] = useState<boolean>(false);
+  
   // 문의 데이터 가져오기
   useEffect(() => {
     // 서버 사이드 렌더링에서는 실행하지 않음
     if (typeof window === 'undefined') return;
     
-    const fetchInquiries = async () => {
-      try {
-        setIsLoading(true);
-        const response = await getInquiries();
-        
-        // API 응답을 BoardItem 형식으로 변환
-        const formattedItems: BoardItem[] = response.results.map(inquiry => ({
-          id: inquiry.id,
-          inquiry_type: inquiry.inquiry_type,
-          title: inquiry.title,
-          created_at: inquiry.created_at,
-          requester_name: inquiry.requester_name,
-        }));
-        
-        setInquiryItems(formattedItems);
-      } catch (error) {
-        console.error('문의 데이터 로딩 오류:', error);
-        setInquiryItems([]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     fetchInquiries();
   }, []);
+  
+  // 문의 목록 새로고침 함수
+  const fetchInquiries = async () => {
+    try {
+      setIsLoading(true);
+      const response = await getInquiries();
+      
+      // API 응답을 BoardItem 형식으로 변환
+      const formattedItems: BoardItem[] = response.results.map(inquiry => ({
+        id: inquiry.id,
+        inquiry_type: inquiry.inquiry_type,
+        title: inquiry.title,
+        created_at: inquiry.created_at,
+        requester_name: inquiry.requester_name,
+      }));
+      
+      setInquiryItems(formattedItems);
+    } catch (error) {
+      console.error('문의 데이터 로딩 오류:', error);
+      setInquiryItems([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-  // 새 문의 작성 페이지로 이동
+  // 새 문의 작성 다이얼로그 열기
   const handleAddInquiry = () => {
-    router.push('/inquiries/create');
+    setInquiryDialogOpen(true);
   };
 
   // 수업 문의 페이지로 이동
@@ -107,6 +112,16 @@ export default function HomeContent({ slides }: HomeContentProps) {
         />
       </Container>
       <Statistics />
+      
+      {/* 문의 생성 다이얼로그 */}
+      <InquiryDialog
+        open={inquiryDialogOpen}
+        onClose={() => setInquiryDialogOpen(false)}
+        onSuccess={() => {
+          // 문의 생성 후 목록 새로고침
+          fetchInquiries();
+        }}
+      />
     </Box>
   );
 } 

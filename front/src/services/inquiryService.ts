@@ -111,4 +111,48 @@ export const getInquiries = async (): Promise<InquiryResponse> => {
       ]
     };
   }
+};
+
+/**
+ * 새 문의를 생성하는 함수
+ * 
+ * 사용자가 작성한 문의 정보를 서버에 전송합니다.
+ * 인증된 사용자만 문의를 생성할 수 있습니다.
+ * 
+ * @param inquiryData 문의 데이터 객체
+ * @returns 생성된 문의 객체
+ */
+export interface CreateInquiryData {
+  title: string;
+  description: string;
+  inquiry_type: string;
+  requester_name: string;
+}
+
+export const createInquiry = async (inquiryData: CreateInquiryData): Promise<Inquiry> => {
+  try {
+    // 토큰 가져오기 (인증 필요)
+    const token = getToken();
+    
+    if (!token) {
+      throw new Error('인증이 필요합니다. 로그인 후 이용해주세요.');
+    }
+    
+    // 헤더 설정
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    };
+    
+    const response = await axios.post(
+      `${API_URL}/inquiries/create/`, 
+      inquiryData,
+      { headers }
+    );
+    
+    return response.data;
+  } catch (error) {
+    console.error('문의 생성 중 오류 발생:', error);
+    throw error;
+  }
 }; 
