@@ -22,22 +22,20 @@ class InquiryPagination(PageNumberPagination):
 
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 def get_inquiry_list(request):
     """
     견적 문의 목록을 조회하는 함수
     
     검색 기능과 페이지네이션을 지원합니다.
     검색어가 제공되면 제목이나 요청자 이름으로 필터링합니다.
-    일반 사용자는 자신의 문의만 볼 수 있고, 관리자는 모든 문의를 볼 수 있습니다.
+    모든 사용자가 목록을 볼 수 있습니다.
+    로그인한 일반 사용자는 모든 문의를 볼 수 있고, 상세 정보는 작성자만 볼 수 있습니다.
     """
     search_query = request.query_params.get('search', '')
     
-    # 관리자가 아니면 자신의 문의만 볼 수 있음
-    if not request.user.is_staff:
-        base_queryset = Inquiry.objects.filter(user=request.user)
-    else:
-        base_queryset = Inquiry.objects.all()
+    # 기본적으로 모든 문의 목록을 반환
+    base_queryset = Inquiry.objects.all()
     
     # 검색어가 있을 경우 제목이나 요청자 이름으로 필터링
     if search_query:

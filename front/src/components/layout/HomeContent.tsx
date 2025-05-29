@@ -10,8 +10,7 @@ import BoardList, { BoardItem } from "@/components/domain/Board/BoardList";
 import Statistics from "@/components/domain/Statistics";
 import { Slide } from "@/services/slidesService";
 import ProductListContainer from "@/components/domain/ProductListContainer";
-import { getInquiries, Inquiry } from "@/services/inquiryService";
-import { isAuthenticated, setTestToken } from "@/services/authService";
+import { getInquiries } from "@/services/inquiryService";
 
 // 카테고리 링크
 const categoryLinks = [
@@ -44,12 +43,6 @@ export default function HomeContent({ slides }: HomeContentProps) {
   useEffect(() => {
     // 서버 사이드 렌더링에서는 실행하지 않음
     if (typeof window === 'undefined') return;
-    
-    // 테스트를 위해 인증되지 않은 상태면 테스트 토큰 설정
-    if (!isAuthenticated()) {
-      console.log('테스트 토큰 설정');
-      setTestToken();
-    }
     
     const fetchInquiries = async () => {
       try {

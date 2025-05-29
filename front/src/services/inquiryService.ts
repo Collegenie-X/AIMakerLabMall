@@ -49,26 +49,22 @@ const getToken = (): string | null => {
  * 문의 목록을 가져오는 함수
  * 
  * API 서버로부터 문의 목록 데이터를 가져옵니다.
- * 로그인 상태에 따라 인증 토큰을 포함합니다.
+ * 목록 조회는 인증 없이도 가능합니다.
  */
 export const getInquiries = async (): Promise<InquiryResponse> => {
   try {
-    // 토큰 가져오기
-    const token = getToken();
-    
-    // 헤더 설정
+    // 헤더 설정 - 목록 조회는 인증 없이도 가능하므로 기본 헤더만 설정
     const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
+      'Content-Type': 'application/json'
     };
     
-    // 토큰이 있으면 Authorization 헤더 추가
+    // 토큰이 있는 경우에만 Authorization 헤더 추가 (선택적)
+    const token = getToken();
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }
     
-    console.log('API 요청 헤더:', headers); // 디버깅용
-    
-    const response = await axios.get(`${API_URL}/api/v1/inquiries/`, { headers });
+    const response = await axios.get(`${API_URL}/inquiries/`, { headers });
     
     return response.data;
   } catch (error) {
