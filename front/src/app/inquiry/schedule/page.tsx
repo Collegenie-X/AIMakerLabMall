@@ -944,6 +944,20 @@ export default function EducationSchedulePage() {
     setSelectedLessonTitle('');
   };
 
+  /**
+   * 일정 페이지로 이동 (호환성)
+   */
+  const handleMoveToSchedule = () => {
+    window.location.href = '/inquiry/schedule';
+  };
+
+  /**
+   * 출장 강의 문의 페이지로 이동 (호환성)
+   */
+  const handleMoveToContact = () => {
+    window.location.href = '/inquiry/contact';
+  };
+
   return (
     <>
       {/* CSS 애니메이션 정의 */}
@@ -1017,9 +1031,27 @@ export default function EducationSchedulePage() {
 
         {/* 카테고리 필터 */}
         <Box sx={{ mb: 4 }}>
-          <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
-            교육 분야
-          </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
+              교육 분야
+            </Typography>
+            <Button
+              variant="outlined"
+              onClick={handleMoveToContact}
+              startIcon={<DirectionsCar />}
+              sx={{ 
+                minWidth: 140,
+                borderColor: '#9c27b0',
+                color: '#9c27b0',
+                '&:hover': {
+                  borderColor: '#7b1fa2',
+                  backgroundColor: '#f3e5f5'
+                }
+              }}
+            >
+              출장 강의 문의
+            </Button>
+          </Box>
           <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
             {categories.map((category) => (
               <Chip
