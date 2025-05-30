@@ -22,7 +22,6 @@ import {
   Select,
   MenuItem,
   Alert,
-  Badge,
   LinearProgress
 } from '@mui/material';
 import {
@@ -32,14 +31,13 @@ import {
   School,
   ArrowForward,
   CheckCircle,
-  SwapHoriz,
   Place,
   BookmarkAdded,
   BookmarkBorder,
-  VideoCall,
   LocationOn,
   PersonAdd,
-  HowToReg
+  HowToReg,
+  DirectionsCar
 } from '@mui/icons-material';
 
 /**
@@ -57,9 +55,9 @@ interface EducationSchedule {
   level: '초급' | '중급' | '고급';
   category: string;
   status: '예정' | '진행중' | '완료';
-  classType: '온라인' | '오프라인' | '하이브리드';
+  classType: '오프라인' | '직접 출강';
   description: string;
-  registrationStatus: '미신청' | '신청예정' | '신청완료' | '수강중' | '수료';
+  registrationStatus: '미신청' | '신청완료';
   price: number;
   location?: string;
 }
@@ -69,7 +67,7 @@ interface EducationSchedule {
  */
 interface RegistrationInfo {
   scheduleId: string;
-  classFormat: '온라인' | '오프라인';
+  classFormat: '오프라인' | '직접 출강';
   studentName: string;
   phone: string;
   email: string;
@@ -109,9 +107,9 @@ export default function EducationSchedulePage() {
       level: '초급',
       category: '앱 개발',
       status: '예정',
-      classType: '하이브리드',
+      classType: '오프라인',
       description: '스마트폰 앱 개발의 첫걸음, 블록 코딩으로 쉽게 배우는 앱 인벤터',
-      registrationStatus: '신청예정',
+      registrationStatus: '미신청',
       price: 150000,
       location: '강남 본원 3층 실습실'
     },
@@ -145,10 +143,11 @@ export default function EducationSchedulePage() {
       level: '중급',
       category: 'AI',
       status: '예정',
-      classType: '온라인',
+      classType: '직접 출강',
       description: 'Python을 활용한 머신러닝 기초와 실습 프로젝트',
       registrationStatus: '신청완료',
-      price: 250000
+      price: 250000,
+      location: '고객 지정 장소'
     },
     {
       id: '4',
@@ -162,11 +161,11 @@ export default function EducationSchedulePage() {
       level: '초급',
       category: '하드웨어',
       status: '예정',
-      classType: '하이브리드',
+      classType: '직접 출강',
       description: '라즈베리파이로 만드는 나만의 미니 컴퓨터',
-      registrationStatus: '수강중',
+      registrationStatus: '미신청',
       price: 180000,
-      location: '강남 본원 하드웨어 랩'
+      location: '고객 지정 장소'
     }
   ]);
 
@@ -204,9 +203,8 @@ export default function EducationSchedulePage() {
    */
   const getClassTypeIcon = (classType: string) => {
     switch (classType) {
-      case '온라인': return <VideoCall sx={{ fontSize: 20 }} />;
+      case '직접 출강': return <DirectionsCar sx={{ fontSize: 20 }} />;
       case '오프라인': return <LocationOn sx={{ fontSize: 20 }} />;
-      case '하이브리드': return <SwapHoriz sx={{ fontSize: 20 }} />;
       default: return <Place sx={{ fontSize: 20 }} />;
     }
   };
@@ -216,9 +214,8 @@ export default function EducationSchedulePage() {
    */
   const getClassTypeColor = (classType: string) => {
     switch (classType) {
-      case '온라인': return '#9c27b0';
+      case '직접 출강': return '#9c27b0';
       case '오프라인': return '#4caf50';
-      case '하이브리드': return '#ff9800';
       default: return '#9e9e9e';
     }
   };
@@ -229,10 +226,7 @@ export default function EducationSchedulePage() {
   const getRegistrationStatusColor = (status: string) => {
     switch (status) {
       case '미신청': return '#9e9e9e';
-      case '신청예정': return '#2196f3';
       case '신청완료': return '#4caf50';
-      case '수강중': return '#ff9800';
-      case '수료': return '#9c27b0';
       default: return '#9e9e9e';
     }
   };
@@ -242,10 +236,7 @@ export default function EducationSchedulePage() {
    */
   const getRegistrationStatusIcon = (status: string) => {
     switch (status) {
-      case '신청예정': return <BookmarkAdded />;
       case '신청완료': return <HowToReg />;
-      case '수강중': return <School />;
-      case '수료': return <CheckCircle />;
       default: return <PersonAdd />;
     }
   };
@@ -278,13 +269,32 @@ export default function EducationSchedulePage() {
   };
 
   /**
+   * 신청/취소 토글 핸들러
+   */
+  const handleRegistrationToggle = (schedule: EducationSchedule) => {
+    if (schedule.registrationStatus === '신청완료') {
+      // 취소하기
+      setScheduleData(prev => 
+        prev.map(item => 
+          item.id === schedule.id 
+            ? { ...item, registrationStatus: '미신청', participants: Math.max(0, item.participants - 1) }
+            : item
+        )
+      );
+    } else {
+      // 신청하기 다이얼로그 열기
+      handleRegistrationOpen(schedule);
+    }
+  };
+
+  /**
    * 신청하기 다이얼로그 열기
    */
   const handleRegistrationOpen = (schedule: EducationSchedule) => {
     setSelectedSchedule(schedule);
     setRegistrationInfo({
       scheduleId: schedule.id,
-      classFormat: schedule.classType === '온라인' ? '온라인' : '오프라인',
+      classFormat: schedule.classType,
       studentName: '',
       phone: '',
       email: ''
@@ -315,19 +325,6 @@ export default function EducationSchedulePage() {
       );
       handleRegistrationClose();
     }
-  };
-
-  /**
-   * 신청 상태 변경 핸들러
-   */
-  const handleStatusChange = (scheduleId: string, newStatus: EducationSchedule['registrationStatus']) => {
-    setScheduleData(prev => 
-      prev.map(item => 
-        item.id === scheduleId 
-          ? { ...item, registrationStatus: newStatus }
-          : item
-      )
-    );
   };
 
   return (
@@ -391,8 +388,7 @@ export default function EducationSchedulePage() {
                 '&:hover': {
                   transform: 'translateY(-4px)',
                   boxShadow: 4
-                },
-                border: schedule.registrationStatus === '신청예정' ? '2px solid #2196f3' : 'none'
+                }
               }}
             >
               <CardContent sx={{ p: 3 }}>
@@ -428,21 +424,16 @@ export default function EducationSchedulePage() {
                         fontWeight: 'bold'
                       }}
                     />
-                    <Badge
-                      badgeContent={schedule.registrationStatus === '신청예정' ? '예정' : ''}
-                      color="primary"
-                    >
-                      <Chip
-                        icon={getRegistrationStatusIcon(schedule.registrationStatus)}
-                        label={schedule.registrationStatus}
-                        size="small"
-                        sx={{
-                          backgroundColor: getRegistrationStatusColor(schedule.registrationStatus),
-                          color: 'white',
-                          fontWeight: 'bold'
-                        }}
-                      />
-                    </Badge>
+                    <Chip
+                      icon={getRegistrationStatusIcon(schedule.registrationStatus)}
+                      label={schedule.registrationStatus}
+                      size="small"
+                      sx={{
+                        backgroundColor: getRegistrationStatusColor(schedule.registrationStatus),
+                        color: 'white',
+                        fontWeight: 'bold'
+                      }}
+                    />
                   </Box>
                 </Box>
 
@@ -517,42 +508,25 @@ export default function EducationSchedulePage() {
                       variant="outlined"
                     />
                   </Box>
-                  <Box sx={{ display: 'flex', gap: 1 }}>
-                    {schedule.registrationStatus !== '미신청' && (
-                      <Button
-                        variant="text"
-                        size="small"
-                        onClick={() => {
-                          const statuses: EducationSchedule['registrationStatus'][] = ['미신청', '신청예정', '신청완료', '수강중', '수료'];
-                          const currentIndex = statuses.indexOf(schedule.registrationStatus);
-                          const nextStatus = statuses[(currentIndex + 1) % statuses.length];
-                          handleStatusChange(schedule.id, nextStatus);
-                        }}
-                        sx={{ fontSize: '0.75rem' }}
-                      >
-                        상태변경
-                      </Button>
-                    )}
-                    <Button
-                      variant="contained"
-                      size="small"
-                      endIcon={<ArrowForward />}
-                      onClick={() => handleRegistrationOpen(schedule)}
-                      disabled={schedule.registrationStatus === '신청완료' || schedule.participants >= schedule.maxParticipants}
-                      sx={{
-                        background: schedule.registrationStatus === '신청완료' 
-                          ? 'linear-gradient(45deg, #4caf50, #66bb6a)'
-                          : 'linear-gradient(45deg, #1976d2, #42a5f5)',
-                        '&:hover': {
-                          background: schedule.registrationStatus === '신청완료'
-                            ? 'linear-gradient(45deg, #388e3c, #4caf50)'
-                            : 'linear-gradient(45deg, #1565c0, #1976d2)',
-                        }
-                      }}
-                    >
-                      {schedule.registrationStatus === '신청완료' ? '신청완료' : '신청하기'}
-                    </Button>
-                  </Box>
+                  <Button
+                    variant="contained"
+                    size="small"
+                    endIcon={schedule.registrationStatus === '신청완료' ? undefined : <ArrowForward />}
+                    onClick={() => handleRegistrationToggle(schedule)}
+                    disabled={schedule.registrationStatus === '미신청' && schedule.participants >= schedule.maxParticipants}
+                    sx={{
+                      background: schedule.registrationStatus === '신청완료' 
+                        ? 'linear-gradient(45deg, #f44336, #ff6659)'
+                        : 'linear-gradient(45deg, #1976d2, #42a5f5)',
+                      '&:hover': {
+                        background: schedule.registrationStatus === '신청완료'
+                          ? 'linear-gradient(45deg, #d32f2f, #f44336)'
+                          : 'linear-gradient(45deg, #1565c0, #1976d2)',
+                      }
+                    }}
+                  >
+                    {schedule.registrationStatus === '신청완료' ? '취소하기' : '신청하기'}
+                  </Button>
                 </Box>
               </CardContent>
             </Card>
@@ -570,12 +544,11 @@ export default function EducationSchedulePage() {
             </Typography>
             <Typography variant="body1" color="text.secondary" sx={{ mb: 3, maxWidth: 600, mx: 'auto' }}>
               모든 교육은 사전 신청제로 운영됩니다. 
-              온라인과 오프라인 수업을 선택할 수 있으며, 하이브리드 수업의 경우 두 방식 모두 가능합니다.
+              오프라인 수업과 직접 출강 서비스를 제공합니다.
             </Typography>
             <Stack direction="row" spacing={2} justifyContent="center" flexWrap="wrap" useFlexGap>
-              <Chip icon={<VideoCall />} label="온라인 수업" color="secondary" />
               <Chip icon={<LocationOn />} label="오프라인 수업" color="success" />
-              <Chip icon={<SwapHoriz />} label="하이브리드 수업" color="warning" />
+              <Chip icon={<DirectionsCar />} label="직접 출강" color="secondary" />
             </Stack>
           </CardContent>
         </Card>
@@ -596,7 +569,6 @@ export default function EducationSchedulePage() {
             <Box sx={{ pt: 2 }}>
               <Alert severity="info" sx={{ mb: 3 }}>
                 선택하신 교육은 <strong>{selectedSchedule.classType}</strong> 형태로 진행됩니다.
-                {selectedSchedule.classType === '하이브리드' && ' 온라인과 오프라인 중 선택 가능합니다.'}
               </Alert>
               
               <Grid container spacing={2}>
@@ -613,26 +585,10 @@ export default function EducationSchedulePage() {
                   <Typography variant="body2" color="text.secondary">
                     수강료: ₩ {selectedSchedule.price.toLocaleString()}
                   </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    장소: {selectedSchedule.location}
+                  </Typography>
                 </Grid>
-                
-                {selectedSchedule.classType === '하이브리드' && (
-                  <Grid item xs={12}>
-                    <FormControl fullWidth sx={{ mt: 2 }}>
-                      <InputLabel>수강 방식</InputLabel>
-                      <Select
-                        value={registrationInfo.classFormat}
-                        label="수강 방식"
-                        onChange={(e) => setRegistrationInfo(prev => ({
-                          ...prev,
-                          classFormat: e.target.value as '온라인' | '오프라인'
-                        }))}
-                      >
-                        <MenuItem value="온라인">온라인 수업</MenuItem>
-                        <MenuItem value="오프라인">오프라인 수업</MenuItem>
-                      </Select>
-                    </FormControl>
-                  </Grid>
-                )}
               </Grid>
             </Box>
           )}
