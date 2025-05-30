@@ -70,7 +70,10 @@ import {
   Discount,
   LocalOffer,
   Schedule,
-  Groups
+  Groups,
+  NavigateBefore,
+  NavigateNext,
+  FiberManualRecord
 } from '@mui/icons-material';
 
 /**
@@ -81,6 +84,7 @@ interface LessonPlan {
   title: string;
   duration: string;
   objectives: string[];
+  previewVideoUrl?: string; // 미리보기 동영상 URL 추가
 }
 
 /**
@@ -197,6 +201,15 @@ export default function EducationSchedulePage() {
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
   const [videoDialog, setVideoDialog] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState<string>('');
+  const [reviewDialog, setReviewDialog] = useState(false);
+  const [newReview, setNewReview] = useState({
+    rating: 0,
+    comment: ''
+  });
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [curriculumVideoDialog, setCurriculumVideoDialog] = useState(false);
+  const [selectedCurriculumVideo, setSelectedCurriculumVideo] = useState<string>('');
+  const [selectedLessonTitle, setSelectedLessonTitle] = useState<string>('');
 
   /**
    * 샘플 교육 일정 데이터 (실제 이미지 및 추가 정보 포함)
@@ -228,25 +241,29 @@ export default function EducationSchedulePage() {
           session: 1, 
           title: '앱 인벤터 소개 및 개발환경 설정', 
           duration: '60분', 
-          objectives: ['앱 인벤터 개념과 특징 이해', '개발환경 설치 및 설정', '블록 코딩 기초 개념', '첫 번째 프로젝트 생성'] 
+          objectives: ['앱 인벤터 개념과 특징 이해', '개발환경 설치 및 설정', '블록 코딩 기초 개념', '첫 번째 프로젝트 생성'],
+          previewVideoUrl: 'https://www.youtube.com/embed/nL34zDTPkcs'
         },
         { 
           session: 2, 
           title: '기본 컴포넌트와 간단한 앱 제작', 
           duration: '90분', 
-          objectives: ['버튼, 텍스트박스 등 기본 컴포넌트 사용법', '이벤트 처리 블록 활용', '간단한 계산기 앱 제작', '앱 테스트 및 디버깅'] 
+          objectives: ['버튼, 텍스트박스 등 기본 컴포넌트 사용법', '이벤트 처리 블록 활용', '간단한 계산기 앱 제작', '앱 테스트 및 디버깅'],
+          previewVideoUrl: 'https://www.youtube.com/embed/aircAruvnKk'
         },
         { 
           session: 3, 
           title: '고급 기능 활용 및 실습 프로젝트', 
           duration: '90분', 
-          objectives: ['센서 데이터 활용하기', '데이터베이스 연동 기초', '멀티미디어 활용', '나만의 앱 프로젝트 완성'] 
+          objectives: ['센서 데이터 활용하기', '데이터베이스 연동 기초', '멀티미디어 활용', '나만의 앱 프로젝트 완성'],
+          previewVideoUrl: 'https://www.youtube.com/embed/ZPRIMQP3wy8'
         }
       ],
       classImages: [
-        'https://images.unsplash.com/photo-1581090464777-f3220bbe1b8b?w=300&h=200&fit=crop',
-        'https://images.unsplash.com/photo-1517077304055-6e89abbf09b0?w=300&h=200&fit=crop',
-        'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=300&h=200&fit=crop'
+        'https://images.unsplash.com/photo-1581090464777-f3220bbe1b8b?w=800&h=400&fit=crop',
+        'https://images.unsplash.com/photo-1517077304055-6e89abbf09b0?w=800&h=400&fit=crop',
+        'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&h=400&fit=crop',
+        'https://images.unsplash.com/photo-1512941937669-0a1dd7228f2d?w=800&h=400&fit=crop'
       ],
       equipment: ['태블릿 또는 스마트폰', '앱 인벤터 개발 키트', 'USB 케이블', '실습용 센서 모듈'],
       targetAge: '초등 4학년 이상',
@@ -323,25 +340,29 @@ export default function EducationSchedulePage() {
           session: 1, 
           title: '아두이노 기초 및 개발환경 구축', 
           duration: '90분', 
-          objectives: ['아두이노 보드의 구조와 원리 이해', '아두이노 IDE 설치 및 설정', '기본 회로 구성 방법', '첫 번째 LED 점멸 프로그램'] 
+          objectives: ['아두이노 보드의 구조와 원리 이해', '아두이노 IDE 설치 및 설정', '기본 회로 구성 방법', '첫 번째 LED 점멸 프로그램'],
+          previewVideoUrl: 'https://www.youtube.com/embed/kR48wdEn6cc'
         },
         { 
           session: 2, 
           title: '다양한 센서 연결 및 데이터 수집', 
           duration: '120분', 
-          objectives: ['온도/습도 센서 활용', '조도 센서와 LED 제어', '움직임 감지 센서 응용', '센서 데이터 시리얼 모니터링'] 
+          objectives: ['온도/습도 센서 활용', '조도 센서와 LED 제어', '움직임 감지 센서 응용', '센서 데이터 시리얼 모니터링'],
+          previewVideoUrl: 'https://www.youtube.com/embed/aircAruvnKk'
         },
         { 
           session: 3, 
           title: 'IoT 프로젝트 제작 및 클라우드 연동', 
           duration: '90분', 
-          objectives: ['WiFi 모듈 연결 및 설정', '클라우드 데이터베이스 연동', '스마트홈 시뮬레이션', '프로젝트 발표 및 시연'] 
+          objectives: ['WiFi 모듈 연결 및 설정', '클라우드 데이터베이스 연동', '스마트홈 시뮬레이션', '프로젝트 발표 및 시연'],
+          previewVideoUrl: 'https://www.youtube.com/embed/ZPRIMQP3wy8'
         }
       ],
       classImages: [
-        'https://images.unsplash.com/photo-1553062407-6e89abbf09b0?w=300&h=200&fit=crop',
-        'https://images.unsplash.com/photo-1581093804475-577d72e38aa0?w=300&h=200&fit=crop',
-        'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=300&h=200&fit=crop'
+        'https://images.unsplash.com/photo-1553062407-6e89abbf09b0?w=800&h=400&fit=crop',
+        'https://images.unsplash.com/photo-1581093804475-577d72e38aa0?w=800&h=400&fit=crop',
+        'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&h=400&fit=crop',
+        'https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=800&h=400&fit=crop'
       ],
       equipment: ['아두이노 우노 보드', '센서 키트 (온도/습도/조도/움직임)', '브레드보드 및 점퍼선', 'USB 케이블', 'WiFi 모듈'],
       targetAge: '중학생 이상',
@@ -409,25 +430,29 @@ export default function EducationSchedulePage() {
           session: 1, 
           title: 'AI와 머신러닝 개념 이해', 
           duration: '120분', 
-          objectives: ['인공지능의 역사와 발전 과정', '머신러닝의 종류와 특징', '일상생활 속 AI 사례 분석', '머신러닝 프로젝트 설계 방법'] 
+          objectives: ['인공지능의 역사와 발전 과정', '머신러닝의 종류와 특징', '일상생활 속 AI 사례 분석', '머신러닝 프로젝트 설계 방법'],
+          previewVideoUrl: 'https://www.youtube.com/embed/kR48wdEn6cc'
         },
         { 
           session: 2, 
           title: 'Python 기초 및 데이터 처리', 
           duration: '150분', 
-          objectives: ['Python 기본 문법 및 라이브러리', 'NumPy, Pandas를 활용한 데이터 처리', '데이터 시각화 기초', '실제 데이터셋 다루기'] 
+          objectives: ['Python 기본 문법 및 라이브러리', 'NumPy, Pandas를 활용한 데이터 처리', '데이터 시각화 기초', '실제 데이터셋 다루기'],
+          previewVideoUrl: 'https://www.youtube.com/embed/nL34zDTPkcs'
         },
         { 
           session: 3, 
           title: '머신러닝 모델 구현 및 실습', 
           duration: '150분', 
-          objectives: ['Scikit-learn을 활용한 모델 구현', '이미지 분류 프로젝트', '예측 모델 성능 평가', '나만의 AI 프로젝트 완성'] 
+          objectives: ['Scikit-learn을 활용한 모델 구현', '이미지 분류 프로젝트', '예측 모델 성능 평가', '나만의 AI 프로젝트 완성'],
+          previewVideoUrl: 'https://www.youtube.com/embed/ZPRIMQP3wy8'
         }
       ],
       classImages: [
-        'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=300&h=200&fit=crop',
-        'https://images.unsplash.com/photo-1516110833967-0b5716ca1387?w=300&h=200&fit=crop',
-        'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=300&h=200&fit=crop'
+        'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=800&h=400&fit=crop',
+        'https://images.unsplash.com/photo-1516110833967-0b5716ca1387?w=800&h=400&fit=crop',
+        'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&h=400&fit=crop',
+        'https://images.unsplash.com/photo-1555949963-aa79dcee981c?w=800&h=400&fit=crop'
       ],
       equipment: ['개인 노트북 (Windows/Mac)', 'Python 개발환경 (설치 지원)', 'Jupyter Notebook', '실습용 데이터셋', '클라우드 계정'],
       targetAge: '고등학생 이상',
@@ -495,25 +520,29 @@ export default function EducationSchedulePage() {
           session: 1, 
           title: '라즈베리파이 소개 및 시스템 설정', 
           duration: '60분', 
-          objectives: ['라즈베리파이의 역사와 활용 분야', '운영체제 설치 및 초기 설정', '리눅스 기본 명령어', '원격 접속 환경 구축'] 
+          objectives: ['라즈베리파이의 역사와 활용 분야', '운영체제 설치 및 초기 설정', '리눅스 기본 명령어', '원격 접속 환경 구축'],
+          previewVideoUrl: 'https://www.youtube.com/embed/kR48wdEn6cc'
         },
         { 
           session: 2, 
           title: 'GPIO 핀 제어 및 하드웨어 연결', 
           duration: '80분', 
-          objectives: ['GPIO 핀의 역할과 사용법', 'LED 제어 프로그래밍', '버튼 입력 처리', '센서 데이터 읽기'] 
+          objectives: ['GPIO 핀의 역할과 사용법', 'LED 제어 프로그래밍', '버튼 입력 처리', '센서 데이터 읽기'],
+          previewVideoUrl: 'https://www.youtube.com/embed/nL34zDTPkcs'
         },
         { 
           session: 3, 
           title: '미니 프로젝트 제작 및 응용', 
           duration: '40분', 
-          objectives: ['스마트 알람 시계 제작', '온도 모니터링 시스템', '카메라 모듈 활용', '프로젝트 발표 및 시연'] 
+          objectives: ['스마트 알람 시계 제작', '온도 모니터링 시스템', '카메라 모듈 활용', '프로젝트 발표 및 시연'],
+          previewVideoUrl: 'https://www.youtube.com/embed/aircAruvnKk'
         }
       ],
       classImages: [
-        'https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=300&h=200&fit=crop',
-        'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=300&h=200&fit=crop',
-        'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=300&h=200&fit=crop'
+        'https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=800&h=400&fit=crop',
+        'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&h=400&fit=crop',
+        'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&h=400&fit=crop',
+        'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&h=400&fit=crop'
       ],
       equipment: ['라즈베리파이 4 Model B', 'MicroSD 카드 (32GB)', 'LED 키트 및 저항', '점퍼선 및 브레드보드', '카메라 모듈'],
       targetAge: '초등 5학년 이상',
@@ -822,6 +851,97 @@ export default function EducationSchedulePage() {
         preferredTime: ''
       } : undefined
     }));
+  };
+
+  /**
+   * 리뷰 작성 권한 확인 (수강 완료한 사람만 가능)
+   */
+  const canWriteReview = (schedule: EducationSchedule): boolean => {
+    // 실제로는 사용자의 수강 이력을 확인해야 하지만, 
+    // 데모용으로 신청 완료된 강의만 리뷰 작성 가능하도록 함
+    return schedule.registrationStatus === '신청완료';
+  };
+
+  /**
+   * 리뷰 작성 다이얼로그 열기
+   */
+  const handleReviewDialogOpen = () => {
+    setReviewDialog(true);
+  };
+
+  /**
+   * 리뷰 작성 다이얼로그 닫기
+   */
+  const handleReviewDialogClose = () => {
+    setReviewDialog(false);
+    setNewReview({ rating: 0, comment: '' });
+  };
+
+  /**
+   * 리뷰 제출
+   */
+  const handleReviewSubmit = () => {
+    if (selectedSchedule && newReview.rating > 0 && newReview.comment.trim()) {
+      const review: StudentReview = {
+        id: Date.now().toString(),
+        studentName: registrationInfo.studentName || '익명',
+        rating: newReview.rating,
+        comment: newReview.comment,
+        date: new Date().toLocaleDateString('ko-KR'),
+        course: selectedSchedule.title,
+        avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face'
+      };
+
+      // 스케줄 데이터에 리뷰 추가
+      setScheduleData(prev => 
+        prev.map(item => 
+          item.id === selectedSchedule.id 
+            ? { 
+                ...item, 
+                reviews: [...(item.reviews || []), review],
+                totalReviews: (item.totalReviews || 0) + 1,
+                averageRating: item.reviews 
+                  ? (item.reviews.reduce((sum, r) => sum + r.rating, 0) + newReview.rating) / (item.reviews.length + 1)
+                  : newReview.rating
+              }
+            : item
+        )
+      );
+
+      handleReviewDialogClose();
+    }
+  };
+
+  /**
+   * 슬라이드 이동 핸들러
+   */
+  const handleSlideChange = (direction: 'prev' | 'next', schedule: EducationSchedule) => {
+    const totalSlides = schedule.classImages.length;
+    setCurrentSlide(prev => {
+      if (direction === 'prev') {
+        return prev === 0 ? totalSlides - 1 : prev - 1;
+      } else {
+        return prev === totalSlides - 1 ? 0 : prev + 1;
+      }
+    });
+  };
+
+  /**
+   * 커리큘럼 동영상 다이얼로그 열기
+   */
+  const handleCurriculumVideoOpen = (videoUrl: string, lessonTitle: string) => {
+    setSelectedCurriculumVideo(videoUrl);
+    setSelectedLessonTitle(lessonTitle);
+    setCurriculumVideoDialog(true);
+  };
+
+  /**
+   * 커리큘럼 동영상 다이얼로그 닫기
+   */
+  const handleCurriculumVideoClose = () => {
+    setCurriculumVideoDialog(false);
+    setSelectedCurriculumVideo('');
+    setSelectedLessonTitle('');
   };
 
   return (
@@ -1486,7 +1606,7 @@ export default function EducationSchedulePage() {
             sx: { 
               borderRadius: 2,
               overflow: 'hidden',
-              maxHeight: '90vh'
+              maxHeight: '95vh'
             }
           }}
         >
@@ -1494,7 +1614,8 @@ export default function EducationSchedulePage() {
             background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
             color: 'white',
             textAlign: 'center',
-            py: 3
+            py: 2,
+            pb: 0
           }}>
             <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
               교육 신청
@@ -1505,278 +1626,569 @@ export default function EducationSchedulePage() {
               </Typography>
             )}
           </DialogTitle>
+
+          {/* 썸네일/동영상 섹션 */}
+          {selectedSchedule && (
+            <Box sx={{ position: 'relative', backgroundColor: '#667eea', height: 300 }}>
+              {/* 이미지 슬라이드 */}
+              <Box sx={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }}>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    transition: 'transform 0.5s ease-in-out',
+                    transform: `translateX(-${currentSlide * 100}%)`,
+                    height: '100%'
+                  }}
+                >
+                  {selectedSchedule.classImages.map((image, index) => (
+                    <Box
+                      key={index}
+                      sx={{
+                        minWidth: '100%',
+                        height: '100%',
+                        backgroundImage: `url(${image})`,
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                        position: 'relative'
+                      }}
+                    >
+                      {/* 오버레이 */}
+                      <Box
+                        sx={{
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          bottom: 0,
+                          background: 'linear-gradient(45deg, rgba(0,0,0,0.4), rgba(0,0,0,0.2))'
+                        }}
+                      />
+                    </Box>
+                  ))}
+                </Box>
+
+                {/* 슬라이드 네비게이션 버튼 */}
+                <IconButton
+                  onClick={() => handleSlideChange('prev', selectedSchedule)}
+                  sx={{
+                    position: 'absolute',
+                    left: 16,
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                    color: '#1976d2',
+                    '&:hover': {
+                      backgroundColor: 'white',
+                      transform: 'translateY(-50%) scale(1.1)'
+                    },
+                    transition: 'all 0.3s ease'
+                  }}
+                >
+                  <NavigateBefore />
+                </IconButton>
+                
+                <IconButton
+                  onClick={() => handleSlideChange('next', selectedSchedule)}
+                  sx={{
+                    position: 'absolute',
+                    right: 16,
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                    color: '#1976d2',
+                    '&:hover': {
+                      backgroundColor: 'white',
+                      transform: 'translateY(-50%) scale(1.1)'
+                    },
+                    transition: 'all 0.3s ease'
+                  }}
+                >
+                  <NavigateNext />
+                </IconButton>
+
+                {/* 슬라이드 인디케이터 */}
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    bottom: 16,
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    display: 'flex',
+                    gap: 1
+                  }}
+                >
+                  {selectedSchedule.classImages.map((_, index) => (
+                    <FiberManualRecord
+                      key={index}
+                      onClick={() => setCurrentSlide(index)}
+                      sx={{
+                        fontSize: 12,
+                        color: index === currentSlide ? 'white' : 'rgba(255, 255, 255, 0.5)',
+                        cursor: 'pointer',
+                        transition: 'all 0.3s ease',
+                        '&:hover': {
+                          color: 'white',
+                          transform: 'scale(1.2)'
+                        }
+                      }}
+                    />
+                  ))}
+                </Box>
+              </Box>
+              
+              {/* 메인 동영상 재생 버튼 */}
+              {selectedSchedule.videoUrl && (
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    zIndex: 10
+                  }}
+                >
+                  <IconButton
+                    onClick={() => handleVideoOpen(selectedSchedule.videoUrl!)}
+                    sx={{
+                      backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                      color: '#1976d2',
+                      p: 3,
+                      '&:hover': {
+                        backgroundColor: 'white',
+                        transform: 'scale(1.1)'
+                      },
+                      transition: 'all 0.3s ease',
+                      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)'
+                    }}
+                  >
+                    <PlayArrow sx={{ fontSize: 48 }} />
+                  </IconButton>
+                </Box>
+              )}
+
+              {/* 평점 표시 */}
+              {selectedSchedule.averageRating && (
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    top: 16,
+                    right: 16,
+                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                    borderRadius: 3,
+                    p: 1.5,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 0.5,
+                    boxShadow: 3,
+                    zIndex: 10
+                  }}
+                >
+                  <Star sx={{ color: '#ffc107', fontSize: 20 }} />
+                  <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                    {selectedSchedule.averageRating.toFixed(1)} ({selectedSchedule.totalReviews})
+                  </Typography>
+                </Box>
+              )}
+
+              {/* 코스 정보 오버레이 */}
+              <Box
+                sx={{
+                  position: 'absolute',
+                  bottom: 16,
+                  right: 16,
+                  backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                  color: 'white',
+                  borderRadius: 2,
+                  p: 2,
+                  minWidth: 200,
+                  zIndex: 10
+                }}
+              >
+                <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 0.5 }}>
+                  {selectedSchedule.title}
+                </Typography>
+                <Typography variant="caption" sx={{ opacity: 0.9 }}>
+                  {selectedSchedule.instructor} • {selectedSchedule.duration}
+                </Typography>
+              </Box>
+            </Box>
+          )}
+
           <DialogContent sx={{ p: 0 }}>
             {selectedSchedule && (
-              <Grid container sx={{ minHeight: '500px' }}>
-                {/* 좌측: 신청자 정보 */}
-                <Grid item xs={12} md={5}>
-                  <Box sx={{ p: 3, backgroundColor: '#f8f9fa', height: '100%' }}>
-                    <Typography variant="h6" gutterBottom sx={{ 
-                      fontWeight: 'bold',
-                      display: 'flex',
-                      alignItems: 'center',
-                      mb: 3
-                    }}>
-                      <PersonAdd sx={{ mr: 1, color: '#1976d2' }} />
-                      신청자 정보
+              <>
+                <Grid container sx={{ minHeight: '400px' }}>
+                  {/* 좌측: 신청자 정보 */}
+                  <Grid item xs={12} md={5}>
+                    <Box sx={{ p: 3, backgroundColor: '#f8f9fa', height: '100%' }}>
+                      <Typography variant="h6" gutterBottom sx={{ 
+                        fontWeight: 'bold',
+                        display: 'flex',
+                        alignItems: 'center',
+                        mb: 3
+                      }}>
+                        <PersonAdd sx={{ mr: 1, color: '#1976d2' }} />
+                        신청자 정보
+                      </Typography>
+                      
+                      <Stack spacing={3}>
+                        <TextField
+                          label="실명"
+                          value={registrationInfo.studentName}
+                          onChange={(e) => handleRegistrationInfoChange('studentName', e.target.value)}
+                          fullWidth
+                          required
+                          variant="outlined"
+                          size="medium"
+                          placeholder="홍길동"
+                        />
+                        <TextField
+                          label="연락받을 전화번호"
+                          value={registrationInfo.phone}
+                          onChange={(e) => handleRegistrationInfoChange('phone', e.target.value)}
+                          fullWidth
+                          required
+                          placeholder="010-1234-5678"
+                          variant="outlined"
+                          size="medium"
+                        />
+                        <TextField
+                          label="연락받을 이메일"
+                          type="email"
+                          value={registrationInfo.email}
+                          onChange={(e) => handleRegistrationInfoChange('email', e.target.value)}
+                          fullWidth
+                          required
+                          placeholder="example@email.com"
+                          variant="outlined"
+                          size="medium"
+                        />
+                        
+                        <FormControl fullWidth>
+                          <InputLabel>수업 형태</InputLabel>
+                          <Select
+                            value={registrationInfo.classFormat}
+                            onChange={(e) => handleClassFormatChange(e.target.value as '오프라인' | '직접 출강')}
+                            label="수업 형태"
+                            size="medium"
+                          >
+                            <MenuItem value="오프라인">
+                              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                <LocationOn sx={{ mr: 1, color: '#4caf50' }} />
+                                오프라인 수업 (본원 방문)
+                              </Box>
+                            </MenuItem>
+                            <MenuItem value="직접 출강">
+                              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                <DirectionsCar sx={{ mr: 1, color: '#9c27b0' }} />
+                                직접 출강 (강사 파견)
+                              </Box>
+                            </MenuItem>
+                          </Select>
+                        </FormControl>
+
+                        {/* 출강 수업 추가 정보 */}
+                        {registrationInfo.classFormat === '직접 출강' && (
+                          <Paper sx={{ p: 3, backgroundColor: '#fff3e0', borderRadius: 2, border: '2px solid #ffb74d' }}>
+                            <Typography variant="subtitle1" gutterBottom sx={{ 
+                              fontWeight: 'bold',
+                              display: 'flex',
+                              alignItems: 'center',
+                              mb: 2,
+                              color: '#e65100'
+                            }}>
+                              <DirectionsCar sx={{ mr: 1 }} />
+                              출강 수업 추가 정보
+                            </Typography>
+                            <Stack spacing={2}>
+                              <TextField
+                                label="학생 수"
+                                type="number"
+                                value={registrationInfo.outreachInfo?.studentCount || ''}
+                                onChange={(e) => handleOutreachInfoChange('studentCount', parseInt(e.target.value))}
+                                fullWidth
+                                required
+                                inputProps={{ min: 1, max: 50 }}
+                                helperText="최소 1명, 최대 50명"
+                                size="small"
+                              />
+                              <FormControl fullWidth required size="small">
+                                <InputLabel>학년/연령대</InputLabel>
+                                <Select
+                                  value={registrationInfo.outreachInfo?.studentGrade || ''}
+                                  onChange={(e) => handleOutreachInfoChange('studentGrade', e.target.value)}
+                                  label="학년/연령대"
+                                >
+                                  {gradeOptions.map((grade) => (
+                                    <MenuItem key={grade} value={grade}>{grade}</MenuItem>
+                                  ))}
+                                </Select>
+                              </FormControl>
+                              <TextField
+                                label="희망 수업 시간"
+                                value={registrationInfo.outreachInfo?.duration || ''}
+                                onChange={(e) => handleOutreachInfoChange('duration', e.target.value)}
+                                fullWidth
+                                required
+                                placeholder="예: 2시간, 4시간"
+                                size="small"
+                              />
+                              <TextField
+                                label="특별 요청사항"
+                                multiline
+                                rows={2}
+                                value={registrationInfo.outreachInfo?.specialRequests || ''}
+                                onChange={(e) => handleOutreachInfoChange('specialRequests', e.target.value)}
+                                fullWidth
+                                placeholder="추가 요청사항이 있으시면 입력해주세요"
+                                size="small"
+                              />
+                            </Stack>
+                          </Paper>
+                        )}
+                      </Stack>
+                    </Box>
+                  </Grid>
+
+                  {/* 우측: 교육 상세 정보 */}
+                  <Grid item xs={12} md={7}>
+                    <Box sx={{ p: 3, height: '100%', overflow: 'auto' }}>
+                      <Typography variant="h6" gutterBottom sx={{ 
+                        fontWeight: 'bold',
+                        display: 'flex',
+                        alignItems: 'center',
+                        mb: 3,
+                        color: '#6a1b9a'
+                      }}>
+                        <School sx={{ mr: 1 }} />
+                        교육 상세 정보
+                      </Typography>
+
+                      {/* 기본 교육 정보 */}
+                      <Paper sx={{ p: 2, mb: 3, backgroundColor: '#f3e5f5', borderRadius: 2 }}>
+                        <Grid container spacing={2}>
+                          <Grid item xs={6}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                              <CalendarMonth sx={{ color: '#1976d2', fontSize: 18 }} />
+                              <Typography variant="body2">
+                                <strong>일시:</strong> {new Date(selectedSchedule.date).toLocaleDateString('ko-KR')} {selectedSchedule.time}
+                              </Typography>
+                            </Box>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                              <AccessTime sx={{ color: '#1976d2', fontSize: 18 }} />
+                              <Typography variant="body2">
+                                <strong>시간:</strong> {selectedSchedule.duration}
+                              </Typography>
+                            </Box>
+                          </Grid>
+                          <Grid item xs={6}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                              <School sx={{ color: '#1976d2', fontSize: 18 }} />
+                              <Typography variant="body2">
+                                <strong>강사:</strong> {selectedSchedule.instructor}
+                              </Typography>
+                            </Box>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                              <Place sx={{ color: '#1976d2', fontSize: 18 }} />
+                              <Typography variant="body2">
+                                <strong>장소:</strong> {selectedSchedule.location}
+                              </Typography>
+                            </Box>
+                          </Grid>
+                        </Grid>
+                      </Paper>
+
+                      {/* 수강료 정보 */}
+                      <Paper sx={{ p: 2, mb: 3, backgroundColor: '#e8f5e8', borderRadius: 2 }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>
+                          💰 수강료
+                        </Typography>
+                        {(() => {
+                          const { originalPrice, discountedPrice, bestDiscount } = calculateDiscountPrice(selectedSchedule);
+                          return bestDiscount ? (
+                            <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
+                              <Typography 
+                                variant="body2" 
+                                sx={{ textDecoration: 'line-through', color: 'text.secondary' }}
+                              >
+                                ₩ {originalPrice.toLocaleString()}
+                              </Typography>
+                              <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#f44336' }}>
+                                ₩ {Math.round(discountedPrice).toLocaleString()}
+                              </Typography>
+                              <Chip
+                                label={`${bestDiscount.discountRate}% 할인!`}
+                                size="small"
+                                color="error"
+                                variant="filled"
+                              />
+                            </Stack>
+                          ) : (
+                            <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
+                              ₩ {selectedSchedule.price.toLocaleString()}
+                            </Typography>
+                          );
+                        })()}
+                      </Paper>
+
+                      {/* 차시별 교육 커리큘럼 */}
+                      <Paper sx={{ p: 2, mb: 3, backgroundColor: '#fff3e0', borderRadius: 2 }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 2, display: 'flex', alignItems: 'center' }}>
+                          <MenuBook sx={{ fontSize: 18, mr: 1, color: '#ff9800' }} />
+                          차시별 교육 커리큘럼
+                        </Typography>
+                        {selectedSchedule.lessonPlans.map((lesson, index) => (
+                          <Box key={index} sx={{ mb: 2, p: 2, backgroundColor: 'white', borderRadius: 1, border: '1px solid #ffcc02' }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                              <Box sx={{ flex: 1 }}>
+                                <Typography variant="body2" sx={{ fontWeight: 'bold', color: '#e65100', mb: 1 }}>
+                                  {lesson.session}차시: {lesson.title} ({lesson.duration})
+                                </Typography>
+                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                  {lesson.objectives.map((objective, objIndex) => (
+                                    <Chip
+                                      key={objIndex}
+                                      label={objective}
+                                      size="small"
+                                      variant="outlined"
+                                      color="warning"
+                                      sx={{ fontSize: '0.7rem', height: 20 }}
+                                    />
+                                  ))}
+                                </Box>
+                              </Box>
+                              
+                              {/* 미리보기 버튼 */}
+                              {lesson.previewVideoUrl && (
+                                <Button
+                                  size="small"
+                                  variant="outlined"
+                                  startIcon={<PlayCircleOutline />}
+                                  onClick={() => handleCurriculumVideoOpen(lesson.previewVideoUrl!, lesson.title)}
+                                  sx={{
+                                    ml: 2,
+                                    borderColor: '#ff9800',
+                                    color: '#ff9800',
+                                    fontWeight: 'bold',
+                                    fontSize: '0.75rem',
+                                    minWidth: 'auto',
+                                    px: 1.5,
+                                    py: 0.5,
+                                    '&:hover': {
+                                      backgroundColor: '#fff3e0',
+                                      borderColor: '#f57c00',
+                                      color: '#f57c00',
+                                      transform: 'scale(1.05)'
+                                    },
+                                    transition: 'all 0.2s ease'
+                                  }}
+                                >
+                                  미리보기
+                                </Button>
+                              )}
+                            </Box>
+                          </Box>
+                        ))}
+                      </Paper>
+
+                      {/* 준비 교구재 */}
+                      <Paper sx={{ p: 2, backgroundColor: '#e3f2fd', borderRadius: 2 }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1, display: 'flex', alignItems: 'center' }}>
+                          <Build sx={{ fontSize: 18, mr: 1, color: '#1976d2' }} />
+                          준비 교구재
+                        </Typography>
+                        <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                          {selectedSchedule.equipment?.map((item, index) => (
+                            <Chip
+                              key={index}
+                              label={item}
+                              size="small"
+                              variant="filled"
+                              color="primary"
+                              sx={{ fontSize: '0.75rem' }}
+                            />
+                          ))}
+                        </Stack>
+                      </Paper>
+                    </Box>
+                  </Grid>
+                </Grid>
+
+                {/* 하단: 수강생 후기 섹션 */}
+                <Box sx={{ p: 3, backgroundColor: '#f5f5f5', borderTop: '1px solid #e0e0e0' }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                    <Typography variant="h6" sx={{ fontWeight: 'bold', display: 'flex', alignItems: 'center' }}>
+                      <Star sx={{ fontSize: 20, mr: 1, color: '#ffc107' }} />
+                      수강생 후기 ({selectedSchedule.totalReviews || 0}개)
                     </Typography>
                     
-                    <Stack spacing={3}>
-                      <TextField
-                        label="실명"
-                        value={registrationInfo.studentName}
-                        onChange={(e) => handleRegistrationInfoChange('studentName', e.target.value)}
-                        fullWidth
-                        required
-                        variant="outlined"
-                        size="medium"
-                        placeholder="홍길동"
-                      />
-                      <TextField
-                        label="연락받을 전화번호"
-                        value={registrationInfo.phone}
-                        onChange={(e) => handleRegistrationInfoChange('phone', e.target.value)}
-                        fullWidth
-                        required
-                        placeholder="010-1234-5678"
-                        variant="outlined"
-                        size="medium"
-                      />
-                      <TextField
-                        label="연락받을 이메일"
-                        type="email"
-                        value={registrationInfo.email}
-                        onChange={(e) => handleRegistrationInfoChange('email', e.target.value)}
-                        fullWidth
-                        required
-                        placeholder="example@email.com"
-                        variant="outlined"
-                        size="medium"
-                      />
-                      
-                      <FormControl fullWidth>
-                        <InputLabel>수업 형태</InputLabel>
-                        <Select
-                          value={registrationInfo.classFormat}
-                          onChange={(e) => handleClassFormatChange(e.target.value as '오프라인' | '직접 출강')}
-                          label="수업 형태"
-                          size="medium"
-                        >
-                          <MenuItem value="오프라인">
-                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                              <LocationOn sx={{ mr: 1, color: '#4caf50' }} />
-                              오프라인 수업 (본원 방문)
-                            </Box>
-                          </MenuItem>
-                          <MenuItem value="직접 출강">
-                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                              <DirectionsCar sx={{ mr: 1, color: '#9c27b0' }} />
-                              직접 출강 (강사 파견)
-                            </Box>
-                          </MenuItem>
-                        </Select>
-                      </FormControl>
+                    {canWriteReview(selectedSchedule) && (
+                      <Button
+                        variant="contained"
+                        size="small"
+                        onClick={handleReviewDialogOpen}
+                        sx={{
+                          background: 'linear-gradient(45deg, #ff9800, #ffb74d)',
+                          fontWeight: 'bold',
+                          '&:hover': {
+                            background: 'linear-gradient(45deg, #f57c00, #ff9800)'
+                          }
+                        }}
+                      >
+                        리뷰 작성
+                      </Button>
+                    )}
+                  </Box>
 
-                      {/* 출강 수업 추가 정보 */}
-                      {registrationInfo.classFormat === '직접 출강' && (
-                        <Paper sx={{ p: 3, backgroundColor: '#fff3e0', borderRadius: 2, border: '2px solid #ffb74d' }}>
-                          <Typography variant="subtitle1" gutterBottom sx={{ 
-                            fontWeight: 'bold',
-                            display: 'flex',
-                            alignItems: 'center',
-                            mb: 2,
-                            color: '#e65100'
-                          }}>
-                            <DirectionsCar sx={{ mr: 1 }} />
-                            출강 수업 추가 정보
-                          </Typography>
-                          <Stack spacing={2}>
-                            <TextField
-                              label="학생 수"
-                              type="number"
-                              value={registrationInfo.outreachInfo?.studentCount || ''}
-                              onChange={(e) => handleOutreachInfoChange('studentCount', parseInt(e.target.value))}
-                              fullWidth
-                              required
-                              inputProps={{ min: 1, max: 50 }}
-                              helperText="최소 1명, 최대 50명"
-                              size="small"
-                            />
-                            <FormControl fullWidth required size="small">
-                              <InputLabel>학년/연령대</InputLabel>
-                              <Select
-                                value={registrationInfo.outreachInfo?.studentGrade || ''}
-                                onChange={(e) => handleOutreachInfoChange('studentGrade', e.target.value)}
-                                label="학년/연령대"
+                  {selectedSchedule.reviews && selectedSchedule.reviews.length > 0 ? (
+                    <Grid container spacing={2}>
+                      {selectedSchedule.reviews.slice(0, 4).map((review) => (
+                        <Grid item xs={12} md={6} key={review.id}>
+                          <Paper sx={{ p: 2, backgroundColor: 'white', borderRadius: 2, border: '1px solid #e0e0e0' }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                              <Avatar 
+                                src={review.avatar} 
+                                sx={{ width: 32, height: 32, mr: 1 }}
                               >
-                                {gradeOptions.map((grade) => (
-                                  <MenuItem key={grade} value={grade}>{grade}</MenuItem>
-                                ))}
-                              </Select>
-                            </FormControl>
-                            <TextField
-                              label="희망 수업 시간"
-                              value={registrationInfo.outreachInfo?.duration || ''}
-                              onChange={(e) => handleOutreachInfoChange('duration', e.target.value)}
-                              fullWidth
-                              required
-                              placeholder="예: 2시간, 4시간"
-                              size="small"
-                            />
-                            <TextField
-                              label="특별 요청사항"
-                              multiline
-                              rows={2}
-                              value={registrationInfo.outreachInfo?.specialRequests || ''}
-                              onChange={(e) => handleOutreachInfoChange('specialRequests', e.target.value)}
-                              fullWidth
-                              placeholder="추가 요청사항이 있으시면 입력해주세요"
-                              size="small"
-                            />
-                          </Stack>
-                        </Paper>
-                      )}
-                    </Stack>
-                  </Box>
-                </Grid>
-
-                {/* 우측: 교육 상세 정보 */}
-                <Grid item xs={12} md={7}>
-                  <Box sx={{ p: 3, height: '100%', overflow: 'auto' }}>
-                    <Typography variant="h6" gutterBottom sx={{ 
-                      fontWeight: 'bold',
-                      display: 'flex',
-                      alignItems: 'center',
-                      mb: 3,
-                      color: '#6a1b9a'
-                    }}>
-                      <School sx={{ mr: 1 }} />
-                      교육 상세 정보
-                    </Typography>
-
-                    {/* 기본 교육 정보 */}
-                    <Paper sx={{ p: 2, mb: 3, backgroundColor: '#f3e5f5', borderRadius: 2 }}>
-                      <Grid container spacing={2}>
-                        <Grid item xs={6}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                            <CalendarMonth sx={{ color: '#1976d2', fontSize: 18 }} />
-                            <Typography variant="body2">
-                              <strong>일시:</strong> {new Date(selectedSchedule.date).toLocaleDateString('ko-KR')} {selectedSchedule.time}
+                                {review.studentName[0]}
+                              </Avatar>
+                              <Box sx={{ flex: 1 }}>
+                                <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                                  {review.studentName}
+                                </Typography>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                  <Rating value={review.rating} readOnly size="small" />
+                                  <Typography variant="caption" color="text.secondary">
+                                    {review.date}
+                                  </Typography>
+                                </Box>
+                              </Box>
+                            </Box>
+                            <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.85rem' }}>
+                              {review.comment}
                             </Typography>
-                          </Box>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                            <AccessTime sx={{ color: '#1976d2', fontSize: 18 }} />
-                            <Typography variant="body2">
-                              <strong>시간:</strong> {selectedSchedule.duration}
-                            </Typography>
-                          </Box>
+                          </Paper>
                         </Grid>
-                        <Grid item xs={6}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                            <School sx={{ color: '#1976d2', fontSize: 18 }} />
-                            <Typography variant="body2">
-                              <strong>강사:</strong> {selectedSchedule.instructor}
-                            </Typography>
-                          </Box>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                            <Place sx={{ color: '#1976d2', fontSize: 18 }} />
-                            <Typography variant="body2">
-                              <strong>장소:</strong> {selectedSchedule.location}
-                            </Typography>
-                          </Box>
-                        </Grid>
-                      </Grid>
-                    </Paper>
-
-                    {/* 수강료 정보 */}
-                    <Paper sx={{ p: 2, mb: 3, backgroundColor: '#e8f5e8', borderRadius: 2 }}>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>
-                        💰 수강료
-                      </Typography>
-                      {(() => {
-                        const { originalPrice, discountedPrice, bestDiscount } = calculateDiscountPrice(selectedSchedule);
-                        return bestDiscount ? (
-                          <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
-                            <Typography 
-                              variant="body2" 
-                              sx={{ textDecoration: 'line-through', color: 'text.secondary' }}
-                            >
-                              ₩ {originalPrice.toLocaleString()}
-                            </Typography>
-                            <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#f44336' }}>
-                              ₩ {Math.round(discountedPrice).toLocaleString()}
-                            </Typography>
-                            <Chip
-                              label={`${bestDiscount.discountRate}% 할인!`}
-                              size="small"
-                              color="error"
-                              variant="filled"
-                            />
-                          </Stack>
-                        ) : (
-                          <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
-                            ₩ {selectedSchedule.price.toLocaleString()}
-                          </Typography>
-                        );
-                      })()}
-                    </Paper>
-
-                    {/* 차시별 교육 커리큘럼 */}
-                    <Paper sx={{ p: 2, mb: 3, backgroundColor: '#fff3e0', borderRadius: 2 }}>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 2, display: 'flex', alignItems: 'center' }}>
-                        <MenuBook sx={{ fontSize: 18, mr: 1, color: '#ff9800' }} />
-                        차시별 교육 커리큘럼
-                      </Typography>
-                      {selectedSchedule.lessonPlans.map((lesson, index) => (
-                        <Box key={index} sx={{ mb: 2, p: 2, backgroundColor: 'white', borderRadius: 1, border: '1px solid #ffcc02' }}>
-                          <Typography variant="body2" sx={{ fontWeight: 'bold', color: '#e65100', mb: 1 }}>
-                            {lesson.session}차시: {lesson.title} ({lesson.duration})
-                          </Typography>
-                          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                            {lesson.objectives.map((objective, objIndex) => (
-                              <Chip
-                                key={objIndex}
-                                label={objective}
-                                size="small"
-                                variant="outlined"
-                                color="warning"
-                                sx={{ fontSize: '0.7rem', height: 20 }}
-                              />
-                            ))}
-                          </Box>
-                        </Box>
                       ))}
-                    </Paper>
-
-                    {/* 준비 교구재 */}
-                    <Paper sx={{ p: 2, backgroundColor: '#e3f2fd', borderRadius: 2 }}>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1, display: 'flex', alignItems: 'center' }}>
-                        <Build sx={{ fontSize: 18, mr: 1, color: '#1976d2' }} />
-                        준비 교구재
+                    </Grid>
+                  ) : (
+                    <Paper sx={{ p: 3, textAlign: 'center', backgroundColor: 'white' }}>
+                      <Typography variant="body2" color="text.secondary">
+                        아직 작성된 후기가 없습니다.
+                        {canWriteReview(selectedSchedule) && ' 첫 번째 후기를 작성해보세요!'}
                       </Typography>
-                      <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                        {selectedSchedule.equipment?.map((item, index) => (
-                          <Chip
-                            key={index}
-                            label={item}
-                            size="small"
-                            variant="filled"
-                            color="primary"
-                            sx={{ fontSize: '0.75rem' }}
-                          />
-                        ))}
-                      </Stack>
                     </Paper>
-                  </Box>
-                </Grid>
-              </Grid>
+                  )}
+                </Box>
+              </>
             )}
           </DialogContent>
           <DialogActions sx={{ 
             p: 3, 
             backgroundColor: '#f5f5f5',
             justifyContent: 'flex-end',
-            gap: 2
+            gap: 2,
+            borderTop: '1px solid #e0e0e0'
           }}>
             <Button 
               onClick={handleRegistrationClose}
@@ -1814,6 +2226,80 @@ export default function EducationSchedulePage() {
               }}
             >
               신청하기
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* 리뷰 작성 다이얼로그 */}
+        <Dialog 
+          open={reviewDialog} 
+          onClose={handleReviewDialogClose} 
+          maxWidth="sm" 
+          fullWidth
+          PaperProps={{
+            sx: { 
+              borderRadius: 2
+            }
+          }}
+        >
+          <DialogTitle sx={{ 
+            background: 'linear-gradient(135deg, #ff9800 0%, #ffb74d 100%)',
+            color: 'white',
+            textAlign: 'center'
+          }}>
+            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+              수강 후기 작성
+            </Typography>
+          </DialogTitle>
+          <DialogContent sx={{ p: 3 }}>
+            <Stack spacing={3} sx={{ mt: 1 }}>
+              <Box>
+                <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 'bold' }}>
+                  별점
+                </Typography>
+                <Rating
+                  value={newReview.rating}
+                  onChange={(event, newValue) => {
+                    setNewReview(prev => ({ ...prev, rating: newValue || 0 }));
+                  }}
+                  size="large"
+                  precision={1}
+                />
+              </Box>
+              <Box>
+                <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 'bold' }}>
+                  후기 내용
+                </Typography>
+                <TextField
+                  multiline
+                  rows={4}
+                  value={newReview.comment}
+                  onChange={(e) => setNewReview(prev => ({ ...prev, comment: e.target.value }))}
+                  fullWidth
+                  placeholder="수강하신 교육에 대한 솔직한 후기를 남겨주세요."
+                  variant="outlined"
+                  inputProps={{ maxLength: 300 }}
+                  helperText={`${newReview.comment.length}/300자`}
+                />
+              </Box>
+            </Stack>
+          </DialogContent>
+          <DialogActions sx={{ p: 3, gap: 1 }}>
+            <Button onClick={handleReviewDialogClose}>
+              취소
+            </Button>
+            <Button 
+              onClick={handleReviewSubmit}
+              variant="contained"
+              disabled={newReview.rating === 0 || newReview.comment.trim().length === 0}
+              sx={{
+                background: 'linear-gradient(45deg, #ff9800, #ffb74d)',
+                '&:hover': {
+                  background: 'linear-gradient(45deg, #f57c00, #ff9800)'
+                }
+              }}
+            >
+              후기 등록
             </Button>
           </DialogActions>
         </Dialog>
@@ -1861,6 +2347,73 @@ export default function EducationSchedulePage() {
                 '&:hover': {
                   backgroundColor: 'rgba(255, 255, 255, 0.1)'
                 }
+              }}
+            >
+              닫기
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* 커리큘럼 동영상 다이얼로그 */}
+        <Dialog 
+          open={curriculumVideoDialog} 
+          onClose={handleCurriculumVideoClose} 
+          maxWidth="md" 
+          fullWidth
+          PaperProps={{
+            sx: { 
+              backgroundColor: '#000',
+              borderRadius: 2,
+              overflow: 'hidden'
+            }
+          }}
+        >
+          <DialogTitle sx={{ 
+            color: 'white', 
+            textAlign: 'center',
+            background: 'linear-gradient(135deg, #ff9800 0%, #ffb74d 100%)',
+            py: 2
+          }}>
+            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+              📚 {selectedLessonTitle}
+            </Typography>
+            <Typography variant="body2" sx={{ mt: 0.5, opacity: 0.9 }}>
+              커리큘럼 미리보기
+            </Typography>
+          </DialogTitle>
+          <DialogContent sx={{ p: 0, backgroundColor: '#000' }}>
+            <Box sx={{ position: 'relative', paddingBottom: '56.25%', height: 0 }}>
+              <iframe
+                src={selectedCurriculumVideo}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: '100%',
+                  border: 'none'
+                }}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                title={selectedLessonTitle}
+              />
+            </Box>
+          </DialogContent>
+          <DialogActions sx={{ backgroundColor: '#000', justifyContent: 'center', py: 2 }}>
+            <Button 
+              onClick={handleCurriculumVideoClose}
+              variant="contained"
+              sx={{ 
+                background: 'linear-gradient(45deg, #ff9800, #ffb74d)',
+                color: 'white',
+                fontWeight: 'bold',
+                px: 3,
+                '&:hover': {
+                  background: 'linear-gradient(45deg, #f57c00, #ff9800)',
+                  transform: 'translateY(-1px)',
+                  boxShadow: 3
+                },
+                transition: 'all 0.2s ease'
               }}
             >
               닫기
