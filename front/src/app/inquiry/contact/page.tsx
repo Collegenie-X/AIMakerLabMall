@@ -107,45 +107,66 @@ export default function OutreachInquiryPage() {
   const [inquiryList, setInquiryList] = useState<OutreachInquiry[]>([
     {
       id: '1',
-      title: '코딩 출강 및 수업 문의 목록',
-      organizationName: '○○초등학교',
+      title: '초등학교 3학년 대상 앱 인벤터 교육',
+      organizationName: '서울초등학교',
       contactPerson: '김선생',
       phone: '02-1234-5678',
       email: 'teacher@school.ac.kr',
       courseType: 'app-inventor',
       studentCount: 25,
-      studentGrade: '초등 5학년',
-      preferredDate: '2025.05.20',
+      studentGrade: '초등 3학년',
+      preferredDate: '2025.06.15',
       preferredTime: '14:00',
-      duration: '3시간',
-      location: '○○초등학교 컴퓨터실',
-      message: '5학년 전체 학생 대상으로 앱 인벤터 수업을 진행하고 싶습니다.',
+      duration: '2시간',
+      location: '서울초등학교 컴퓨터실',
+      message: '3학년 학생들이 처음 접하는 코딩 수업으로, 앱 인벤터를 활용한 간단한 앱 만들기를 희망합니다.',
       status: '접수대기',
-      createdAt: '2025.05.20',
-      budget: '500만원',
+      createdAt: '2025.05.29',
+      budget: '300만원',
       equipment: ['태블릿', '프로젝터', '스피커'],
-      specialRequests: '학생들이 처음 접하는 코딩이므로 쉽게 설명해주세요.'
+      specialRequests: '학생들이 처음 접하는 코딩이므로 쉽고 재미있게 설명해주세요.'
     },
     {
       id: '2',
-      title: '수업 문의',
-      organizationName: '△△중학교',
+      title: '중학교 아두이노 IoT 프로젝트 수업',
+      organizationName: '강남중학교',
       contactPerson: '이담임',
       phone: '02-9876-5432',
       email: 'lee@middle.ac.kr',
       courseType: 'arduino',
       studentCount: 30,
       studentGrade: '중학 2학년',
-      preferredDate: '2025.05.20',
+      preferredDate: '2025.06.20',
       preferredTime: '10:00',
       duration: '4시간',
-      location: '△△중학교 과학실',
-      message: '아두이노를 활용한 IoT 프로젝트 수업을 원합니다.',
+      location: '강남중학교 과학실',
+      message: '아두이노를 활용한 IoT 센서 프로젝트 수업을 원합니다. 실습 위주로 진행해주세요.',
       status: '검토중',
-      createdAt: '2025.05.20',
-      budget: '800만원',
+      createdAt: '2025.05.29',
+      budget: '500만원',
       equipment: ['아두이노 키트', '센서 모듈', '노트북'],
-      specialRequests: '실습 위주로 진행해주세요.'
+      specialRequests: '학생 개인별 키트 제공 및 실습 위주 진행 희망'
+    },
+    {
+      id: '3',
+      title: '고등학교 Python AI 기초 교육',
+      organizationName: '명덕고등학교',
+      contactPerson: '박교사',
+      phone: '02-5555-1234',
+      email: 'park@highschool.ac.kr',
+      courseType: 'python',
+      studentCount: 35,
+      studentGrade: '고등 1학년',
+      preferredDate: '2025.07.05',
+      preferredTime: '13:00',
+      duration: '6시간 (3일)',
+      location: '명덕고등학교 정보실',
+      message: 'Python을 활용한 AI 기초 교육으로, 머신러닝 기본 개념과 실습을 포함해주세요.',
+      status: '견적발송',
+      createdAt: '2025.05.28',
+      budget: '800만원',
+      equipment: ['노트북', 'Python 환경', '프로젝터'],
+      specialRequests: 'AI 관련 진로 상담도 함께 진행해주시면 좋겠습니다.'
     }
   ]);
 
@@ -331,10 +352,11 @@ export default function OutreachInquiryPage() {
       {/* 페이지 헤더 */}
       <Box sx={{ textAlign: 'center', mb: 4 }}>
         <Typography variant="h3" component="h1" gutterBottom sx={{ fontWeight: 'bold', color: '#1976d2' }}>
-          수업 문의
+          코딩 출강 및 수업 문의
         </Typography>
-        <Typography variant="h6" color="text.secondary" sx={{ maxWidth: 600, mx: 'auto' }}>
-          AI MAKER LAB의 창의적인 교육 프로그램에 대해 문의해보세요. 전문 강사진이 맞춤형 교육을 제공해 드립니다.
+        <Typography variant="h6" color="text.secondary" sx={{ maxWidth: 700, mx: 'auto' }}>
+          학교, 기관, 단체를 대상으로 전문 강사가 직접 찾아가는 맞춤형 코딩 교육 서비스입니다. 
+          언제든지 문의해 주시면 최적의 교육 프로그램을 제안해 드리겠습니다.
         </Typography>
       </Box>
 
@@ -345,7 +367,7 @@ export default function OutreachInquiryPage() {
           <Card sx={{ mb: 2, border: '1px solid #1976d2', borderRadius: 1.5 }}>
             <CardContent sx={{ p: 1.5 }}>
               <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 'bold', color: '#1976d2', fontSize: '0.9rem' }}>
-                ⚡ 빠른 문의 작성
+                ⚡ 출강 문의 작성
               </Typography>
               <Button
                 variant="contained"
@@ -361,7 +383,7 @@ export default function OutreachInquiryPage() {
                   fontSize: '0.8rem'
                 }}
               >
-                새 출장 강의 문의
+                새 출강 교육 문의
               </Button>
               <Button
                 variant="outlined"
@@ -455,7 +477,7 @@ export default function OutreachInquiryPage() {
           {/* 헤더 */}
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
             <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
-              📋 출장 강의 문의 목록
+              📋 코딩 출강 교육 문의 목록
             </Typography>
             <Stack direction="row" spacing={2}>
               <Chip 
@@ -726,7 +748,7 @@ export default function OutreachInquiryPage() {
           py: 3
         }}>
           <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
-            출장 강의 문의 상세
+            코딩 출강 교육 문의 상세
           </Typography>
           {selectedInquiry && (
             <Typography variant="subtitle1" sx={{ mt: 1, opacity: 0.9 }}>
@@ -898,14 +920,14 @@ export default function OutreachInquiryPage() {
           textAlign: 'center'
         }}>
           <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-            출장 강의 문의 작성
+            코딩 출강 교육 문의 작성
           </Typography>
         </DialogTitle>
         
         <DialogContent sx={{ p: 3 }}>
           {submitted && (
             <Alert severity="success" sx={{ mb: 3 }}>
-              문의가 성공적으로 등록되었습니다. 빠른 시일 내에 연락드리겠습니다.
+              출강 교육 문의가 성공적으로 등록되었습니다. 빠른 시일 내에 연락드리겠습니다.
             </Alert>
           )}
 
@@ -914,11 +936,11 @@ export default function OutreachInquiryPage() {
               <Grid item xs={12}>
                 <TextField
                   fullWidth
-                  label="문의 제목"
+                  label="교육 제목"
                   required
                   value={formData.title}
                   onChange={handleInputChange('title')}
-                  placeholder="예: AI 코딩 수업 문의"
+                  placeholder="예: 초등학교 3학년 앱 인벤터 교육"
                 />
               </Grid>
               
@@ -1048,11 +1070,11 @@ export default function OutreachInquiryPage() {
               <Grid item xs={12}>
                 <TextField
                   fullWidth
-                  label="수업 장소"
+                  label="교육 장소"
                   required
                   value={formData.location}
                   onChange={handleInputChange('location')}
-                  placeholder="예: ○○초등학교 컴퓨터실"
+                  placeholder="예: 서울초등학교 컴퓨터실"
                 />
               </Grid>
               
@@ -1062,32 +1084,32 @@ export default function OutreachInquiryPage() {
                   label="예산 (선택사항)"
                   value={formData.budget}
                   onChange={handleInputChange('budget')}
-                  placeholder="예: 500만원"
+                  placeholder="예: 300만원"
                 />
               </Grid>
               
               <Grid item xs={12}>
                 <TextField
                   fullWidth
-                  label="문의 내용"
+                  label="교육 요청사항"
                   multiline
                   rows={4}
                   required
                   value={formData.message}
                   onChange={handleInputChange('message')}
-                  placeholder="교육 목표, 요구사항, 기타 문의사항을 자유롭게 적어주세요."
+                  placeholder="교육 목표, 학생 수준, 특별 요구사항 등을 자유롭게 적어주세요."
                 />
               </Grid>
               
               <Grid item xs={12}>
                 <TextField
                   fullWidth
-                  label="특별 요청사항 (선택사항)"
+                  label="기타 요청사항 (선택사항)"
                   multiline
                   rows={2}
                   value={formData.specialRequests}
                   onChange={handleInputChange('specialRequests')}
-                  placeholder="장비 준비, 특별한 요구사항 등"
+                  placeholder="장비 준비, 추가 교구, 특별한 요구사항 등"
                 />
               </Grid>
             </Grid>
@@ -1101,7 +1123,7 @@ export default function OutreachInquiryPage() {
             variant="contained"
             sx={{ background: 'linear-gradient(45deg, #4caf50, #66bb6a)' }}
           >
-            문의 등록
+            출강 교육 문의 등록
           </Button>
         </DialogActions>
       </Dialog>
