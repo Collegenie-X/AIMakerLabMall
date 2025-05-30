@@ -32,7 +32,7 @@ import {
   School,
   ArrowForward,
   CheckCircle,
-  OnlineClassification,
+  SwapHoriz,
   Place,
   BookmarkAdded,
   BookmarkBorder,
@@ -206,7 +206,7 @@ export default function EducationSchedulePage() {
     switch (classType) {
       case '온라인': return <VideoCall sx={{ fontSize: 20 }} />;
       case '오프라인': return <LocationOn sx={{ fontSize: 20 }} />;
-      case '하이브리드': return <OnlineClassification sx={{ fontSize: 20 }} />;
+      case '하이브리드': return <SwapHoriz sx={{ fontSize: 20 }} />;
       default: return <Place sx={{ fontSize: 20 }} />;
     }
   };
@@ -575,7 +575,7 @@ export default function EducationSchedulePage() {
             <Stack direction="row" spacing={2} justifyContent="center" flexWrap="wrap" useFlexGap>
               <Chip icon={<VideoCall />} label="온라인 수업" color="secondary" />
               <Chip icon={<LocationOn />} label="오프라인 수업" color="success" />
-              <Chip icon={<OnlineClassification />} label="하이브리드 수업" color="warning" />
+              <Chip icon={<SwapHoriz />} label="하이브리드 수업" color="warning" />
             </Stack>
           </CardContent>
         </Card>

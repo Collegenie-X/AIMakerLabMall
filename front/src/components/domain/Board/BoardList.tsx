@@ -50,6 +50,10 @@ interface BoardListProps {
   baseUrl?: string;
 }
 
+/**
+ * 게시글 목록 컴포넌트
+ * Material-UI hydration 에러를 방지하기 위해 Typography 컴포넌트를 div로 렌더링
+ */
 export default function BoardList({ 
   title, 
   items, 
@@ -59,10 +63,14 @@ export default function BoardList({
 }: BoardListProps) {
   const router = useRouter();
   
-  // 최대 표시 개수만큼만 아이템 제한
+  /**
+   * 최대 표시 개수만큼만 아이템 제한
+   */
   const displayItems = items.slice(0, maxItems);
   
-  // 아이템 클릭 시 상세 페이지로 이동
+  /**
+   * 아이템 클릭 시 상세 페이지로 이동
+   */
   const handleItemClick = (id?: number) => {
     if (id) {
       router.push(`${baseUrl}/${id}`);
@@ -105,6 +113,8 @@ export default function BoardList({
                   {iconMap[item.icon || item.inquiry_type || 'forum']}
                 </ListItemIcon>
                 <ListItemText
+                  primaryTypographyProps={{ component: 'div' }}
+                  secondaryTypographyProps={{ component: 'div' }}
                   primary={
                     <Box display="flex" alignItems="center" gap={1}>
                       <Typography
@@ -150,6 +160,7 @@ export default function BoardList({
           ) : (
             <ListItem>
               <ListItemText
+                primaryTypographyProps={{ component: 'div' }}
                 primary={
                   <Typography variant="body2" color="text.secondary" align="center">
                     게시물이 없습니다
