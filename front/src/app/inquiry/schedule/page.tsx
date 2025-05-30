@@ -1063,508 +1063,386 @@ export default function EducationSchedulePage() {
             const { originalPrice, discountedPrice, bestDiscount } = calculateDiscountPrice(schedule);
             
             return (
-              <Grid item xs={12} lg={6} key={schedule.id}>
+              <Grid item xs={12} md={6} lg={4} key={schedule.id}>
                 <Card 
                   sx={{ 
-                    height: 'auto',
-                    transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+                    width: 320,
+                    height: 400,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    cursor: 'pointer',
+                    border: '1px solid #e0e0e0',
+                    borderRadius: 2,
+                    overflow: 'hidden',
+                    margin: '0 auto',
                     '&:hover': {
-                      transform: 'translateY(-8px)',
-                      boxShadow: 6
+                      transform: 'translateY(-4px)',
+                      boxShadow: '0 12px 24px rgba(0,0,0,0.15)',
+                      borderColor: '#1976d2'
                     },
                     animation: `fadeInUp 0.6s ease-out ${index * 0.1}s both`
                   }}
                 >
-                  {/* 썸네일 이미지 및 동영상 버튼 */}
-                  <Box sx={{ position: 'relative', overflow: 'hidden' }}>
-                    <CardMedia
-                      component="img"
-                      height="200"
-                      image={schedule.thumbnail}
-                      alt={schedule.title}
-                      sx={{ 
-                        objectFit: 'cover',
-                        transition: 'transform 0.3s ease',
-                        '&:hover': {
-                          transform: 'scale(1.05)'
-                        }
+                  {/* 썸네일 및 동영상 섹션 - 1:1 비율 */}
+                  <Box 
+                    sx={{ 
+                      position: 'relative', 
+                      width: '100%',
+                      height: 240,
+                      overflow: 'hidden',
+                      cursor: 'pointer',
+                      backgroundColor: `hsl(${(index * 50) % 360}, 60%, 85%)`
+                    }}
+                    onClick={() => handleRegistrationOpen(schedule)}
+                  >
+                    {/* 기본 이미지 대신 카테고리별 아이콘과 색상 */}
+                    <Box
+                      sx={{
+                        width: '100%',
+                        height: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: `linear-gradient(135deg, 
+                          ${schedule.category === 'AI' ? '#6a5acd, #483d8b' :
+                          schedule.category === '앱 개발' ? '#20b2aa, #008b8b' :
+                          schedule.category === '하드웨어' ? '#ff6347, #dc143c' :
+                          '#32cd32, #228b22'})`,
+                        position: 'relative'
                       }}
-                    />
-                    
-                    {/* 할인 배지 */}
-                    {bestDiscount && (
-                      <Chip
-                        icon={<LocalOffer />}
-                        label={`${bestDiscount.discountRate}% 할인`}
-                        color="error"
-                        className="pulse-animation"
+                    >
+                      {/* 카테고리 아이콘 */}
+                      <Box sx={{ color: 'white', opacity: 0.3 }}>
+                        {schedule.category === 'AI' && <Lightbulb sx={{ fontSize: 80 }} />}
+                        {schedule.category === '앱 개발' && <School sx={{ fontSize: 80 }} />}
+                        {schedule.category === '하드웨어' && <Build sx={{ fontSize: 80 }} />}
+                        {!['AI', '앱 개발', '하드웨어'].includes(schedule.category) && <MenuBook sx={{ fontSize: 80 }} />}
+                      </Box>
+                      
+                      {/* 오버레이 패턴 */}
+                      <Box
                         sx={{
                           position: 'absolute',
-                          top: 12,
-                          left: 12,
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          bottom: 0,
+                          background: 'linear-gradient(45deg, rgba(255,255,255,0.1) 25%, transparent 25%, transparent 75%, rgba(255,255,255,0.1) 75%, rgba(255,255,255,0.1)), linear-gradient(45deg, rgba(255,255,255,0.1) 25%, transparent 25%, transparent 75%, rgba(255,255,255,0.1) 75%, rgba(255,255,255,0.1))',
+                          backgroundSize: '20px 20px',
+                          backgroundPosition: '0 0, 10px 10px'
+                        }}
+                      />
+                    </Box>
+                    
+                    {/* 베스트셀러/인기 강의 배지 */}
+                    {schedule.averageRating && schedule.averageRating >= 4.5 && (
+                      <Chip
+                        label="베스트셀러"
+                        size="small"
+                        sx={{
+                          position: 'absolute',
+                          top: 8,
+                          left: 8,
+                          backgroundColor: '#f57c00',
+                          color: 'white',
                           fontWeight: 'bold',
-                          boxShadow: 3
+                          fontSize: '0.7rem',
+                          height: 20
                         }}
                       />
                     )}
                     
-                    {/* 동영상 재생 버튼 */}
-                    {schedule.videoUrl && (
-                      <Box className="video-overlay">
-                        <IconButton
-                          onClick={() => handleVideoOpen(schedule.videoUrl!)}
-                          sx={{
-                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                            color: 'white',
-                            p: 2,
-                            '&:hover': {
-                              backgroundColor: 'rgba(0, 0, 0, 0.9)',
-                              transform: 'scale(1.1)'
-                            },
-                            transition: 'all 0.3s ease'
-                          }}
-                        >
-                          <PlayArrow sx={{ fontSize: 40 }} />
-                        </IconButton>
-                      </Box>
+                    {/* 할인 배지 */}
+                    {bestDiscount && (
+                      <Chip
+                        label={`-${bestDiscount.discountRate}%`}
+                        size="small"
+                        sx={{
+                          position: 'absolute',
+                          top: 8,
+                          right: 8,
+                          backgroundColor: '#d32f2f',
+                          color: 'white',
+                          fontWeight: 'bold',
+                          fontSize: '0.7rem',
+                          height: 20
+                        }}
+                      />
                     )}
                     
-                    {/* 평점 표시 */}
-                    {schedule.averageRating && (
+                    {/* 동영상 미리보기 호버 오버레이 */}
+                    {schedule.videoUrl && (
                       <Box
                         sx={{
                           position: 'absolute',
-                          bottom: 12,
-                          right: 12,
-                          backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                          borderRadius: 3,
-                          p: 1,
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          bottom: 0,
+                          backgroundColor: 'rgba(0, 0, 0, 0.7)',
                           display: 'flex',
                           alignItems: 'center',
-                          gap: 0.5,
-                          boxShadow: 2
+                          justifyContent: 'center',
+                          opacity: 0,
+                          transition: 'opacity 0.3s ease',
+                          '&:hover': {
+                            opacity: 1
+                          }
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleVideoOpen(schedule.videoUrl!);
                         }}
                       >
-                        <Star sx={{ color: '#ffc107', fontSize: 16 }} />
-                        <Typography variant="caption" sx={{ fontWeight: 'bold' }}>
-                          {schedule.averageRating} ({schedule.totalReviews})
+                        <Box sx={{ textAlign: 'center', color: 'white' }}>
+                          <PlayArrow sx={{ fontSize: 40, mb: 1 }} />
+                          <Typography variant="caption" sx={{ fontWeight: 'bold' }}>
+                            미리보기
+                          </Typography>
+                        </Box>
+                      </Box>
+                    )}
+
+                    {/* 수강 시간 배지 */}
+                    <Box
+                      sx={{
+                        position: 'absolute',
+                        bottom: 8,
+                        left: 8,
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        color: 'white',
+                        borderRadius: 1,
+                        px: 1,
+                        py: 0.5
+                      }}
+                    >
+                      <Typography variant="caption" sx={{ fontWeight: 'bold' }}>
+                        {schedule.duration}
+                      </Typography>
+                    </Box>
+                  </Box>
+                  
+                  <CardContent sx={{ 
+                    p: 1.5, 
+                    flexGrow: 1,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    '&:last-child': { pb: 1.5 }
+                  }}>
+                    {/* 제목 */}
+                    <Typography 
+                      variant="h6" 
+                      sx={{ 
+                        fontWeight: 'bold',
+                        fontSize: '0.95rem',
+                        lineHeight: 1.2,
+                        mb: 0.5,
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden',
+                        minHeight: '2.4em'
+                      }}
+                    >
+                      {schedule.title}
+                    </Typography>
+                    
+                    {/* 강사 정보 */}
+                    <Typography 
+                      variant="body2" 
+                      sx={{ 
+                        color: '#666',
+                        fontSize: '0.75rem',
+                        mb: 1
+                      }}
+                    >
+                      {schedule.instructor}
+                    </Typography>
+
+                    {/* 평점 및 리뷰 */}
+                    {schedule.averageRating && (
+                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                        <Typography 
+                          variant="body2" 
+                          sx={{ 
+                            fontWeight: 'bold',
+                            color: '#b4690e',
+                            mr: 0.5,
+                            fontSize: '0.8rem'
+                          }}
+                        >
+                          {schedule.averageRating.toFixed(1)}
+                        </Typography>
+                        <Rating 
+                          value={schedule.averageRating} 
+                          readOnly 
+                          size="small" 
+                          precision={0.1}
+                          sx={{ mr: 0.5, '& .MuiRating-icon': { fontSize: '0.9rem' } }}
+                        />
+                        <Typography 
+                          variant="body2" 
+                          color="text.secondary"
+                          sx={{ fontSize: '0.7rem' }}
+                        >
+                          ({schedule.totalReviews?.toLocaleString()})
                         </Typography>
                       </Box>
                     )}
-                  </Box>
-                  
-                  <CardContent sx={{ p: 3 }}>
-                    {/* 카드 헤더 */}
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                      <Box sx={{ flex: 1 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                          <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                            {schedule.title}
-                          </Typography>
-                          <Button
+
+                    {/* 레벨과 카테고리 - 수평 배치 */}
+                    <Box sx={{ display: 'flex', gap: 0.5, mb: 1, flexWrap: 'wrap' }}>
+                      <Chip
+                        label={schedule.level}
+                        size="small"
+                        sx={{
+                          backgroundColor: getLevelColor(schedule.level),
+                          color: 'white',
+                          fontWeight: 'bold',
+                          fontSize: '0.65rem',
+                          height: 18
+                        }}
+                      />
+                      <Chip
+                        icon={getClassTypeIcon(schedule.classType)}
+                        label={schedule.classType}
+                        size="small"
+                        sx={{
+                          backgroundColor: getClassTypeColor(schedule.classType),
+                          color: 'white',
+                          fontSize: '0.65rem',
+                          height: 18,
+                          '& .MuiChip-icon': {
+                            fontSize: 10
+                          }
+                        }}
+                      />
+                    </Box>
+
+                    {/* 수강 정보 바 - 컴팩트 */}
+                    <Box sx={{ mb: 1 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.3 }}>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+                          {schedule.participants}/{schedule.maxParticipants}명
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+                          {Math.round((schedule.participants / schedule.maxParticipants) * 100)}%
+                        </Typography>
+                      </Box>
+                      <LinearProgress 
+                        variant="determinate" 
+                        value={(schedule.participants / schedule.maxParticipants) * 100}
+                        sx={{ 
+                          height: 3, 
+                          borderRadius: 2,
+                          backgroundColor: '#f0f0f0',
+                          '& .MuiLinearProgress-bar': {
+                            borderRadius: 2,
+                            backgroundColor: schedule.participants >= schedule.maxParticipants ? '#f44336' : '#4caf50'
+                          }
+                        }}
+                      />
+                    </Box>
+
+                    {/* 푸터 영역 */}
+                    <Box sx={{ mt: 'auto' }}>
+                      {/* 가격 정보 - 좌우 배치 */}
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          {bestDiscount ? (
+                            <>
+                              <Typography 
+                                variant="h6" 
+                                sx={{ 
+                                  fontWeight: 'bold',
+                                  color: '#d32f2f',
+                                  fontSize: '1rem'
+                                }}
+                              >
+                                ₩{Math.round(discountedPrice).toLocaleString()}
+                              </Typography>
+                              <Typography 
+                                variant="body2" 
+                                sx={{ 
+                                  textDecoration: 'line-through', 
+                                  color: 'text.secondary',
+                                  fontSize: '0.75rem'
+                                }}
+                              >
+                                ₩{originalPrice.toLocaleString()}
+                              </Typography>
+                            </>
+                          ) : (
+                            <Typography 
+                              variant="h6" 
+                              sx={{ 
+                                fontWeight: 'bold',
+                                color: '#1976d2',
+                                fontSize: '1rem'
+                              }}
+                            >
+                              ₩{schedule.price.toLocaleString()}
+                            </Typography>
+                          )}
+                        </Box>
+
+                        {/* 북마크 아이콘 */}
+                        <Tooltip title="북마크">
+                          <IconButton
                             size="small"
-                            onClick={() => handleBookmarkToggle(schedule.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleBookmarkToggle(schedule.id);
+                            }}
                             sx={{ 
-                              minWidth: 'auto', 
-                              p: 0.5,
                               transition: 'transform 0.2s ease',
                               '&:hover': {
-                                transform: 'scale(1.2)'
+                                transform: 'scale(1.1)'
                               }
                             }}
                           >
                             {bookmarkedItems.has(schedule.id) ? 
-                              <BookmarkAdded color="primary" /> : 
-                              <BookmarkBorder color="action" />
+                              <BookmarkAdded color="primary" fontSize="small" /> : 
+                              <BookmarkBorder color="action" fontSize="small" />
                             }
-                          </Button>
-                        </Box>
-                        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                          {schedule.description}
-                        </Typography>
+                          </IconButton>
+                        </Tooltip>
                       </Box>
-                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, alignItems: 'flex-end' }}>
-                        <Chip
-                          label={schedule.status}
-                          size="small"
-                          sx={{
-                            backgroundColor: getStatusColor(schedule.status),
-                            color: 'white',
-                            fontWeight: 'bold'
-                          }}
-                        />
-                        <Chip
-                          icon={getRegistrationStatusIcon(schedule.registrationStatus)}
-                          label={schedule.registrationStatus}
-                          size="small"
-                          sx={{
-                            backgroundColor: getRegistrationStatusColor(schedule.registrationStatus),
-                            color: 'white',
-                            fontWeight: 'bold'
-                          }}
-                        />
-                      </Box>
-                    </Box>
 
-                    {/* 교육 기본 정보 */}
-                    <Box sx={{ mb: 3 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                        <CalendarMonth sx={{ fontSize: 20, mr: 1, color: '#1976d2' }} />
-                        <Typography variant="body2">
-                          {new Date(schedule.date).toLocaleDateString('ko-KR', {
-                            month: 'long',
-                            day: 'numeric',
-                            weekday: 'short'
-                          })}
-                        </Typography>
-                      </Box>
-                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                        <AccessTime sx={{ fontSize: 20, mr: 1, color: '#1976d2' }} />
-                        <Typography variant="body2">
-                          {schedule.time} ({schedule.duration})
-                        </Typography>
-                      </Box>
-                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                        <School sx={{ fontSize: 20, mr: 1, color: '#1976d2' }} />
-                        <Typography variant="body2">
-                          {schedule.instructor}
-                        </Typography>
-                      </Box>
-                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                        <Group sx={{ fontSize: 20, mr: 1, color: '#1976d2' }} />
-                        <Typography variant="body2">
-                          {schedule.participants}/{schedule.maxParticipants}명
-                        </Typography>
-                        <LinearProgress 
-                          variant="determinate" 
-                          value={(schedule.participants / schedule.maxParticipants) * 100}
-                          sx={{ 
-                            ml: 2, 
-                            flex: 1, 
-                            height: 8, 
-                            borderRadius: 4,
-                            backgroundColor: '#e0e0e0',
-                            '& .MuiLinearProgress-bar': {
-                              borderRadius: 4,
-                              background: 'linear-gradient(45deg, #4caf50, #81c784)'
-                            }
-                          }}
-                        />
-                      </Box>
-                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                        <Box sx={{ color: getClassTypeColor(schedule.classType), mr: 1 }}>
-                          {getClassTypeIcon(schedule.classType)}
-                        </Box>
-                        <Typography variant="body2">
-                          {schedule.classType}
-                          {schedule.location && ` • ${schedule.location}`}
-                        </Typography>
-                      </Box>
-                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                        <EmojiPeople sx={{ fontSize: 20, mr: 1, color: '#1976d2' }} />
-                        <Typography variant="body2">
-                          대상: {schedule.targetAge}
-                        </Typography>
-                      </Box>
-                    </Box>
-
-                    {/* 가격 정보 (할인 적용) */}
-                    <Box sx={{ mb: 3, p: 2, backgroundColor: '#f8f9fa', borderRadius: 2 }}>
-                      {bestDiscount ? (
-                        <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
-                          <Typography 
-                            variant="body2" 
-                            sx={{ 
-                              textDecoration: 'line-through', 
-                              color: 'text.secondary' 
-                            }}
-                          >
-                            ₩ {originalPrice.toLocaleString()}
-                          </Typography>
-                          <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#f44336' }}>
-                            ₩ {Math.round(discountedPrice).toLocaleString()}
-                          </Typography>
-                          <Chip
-                            label={`${originalPrice - Math.round(discountedPrice)}원 절약!`}
-                            size="small"
-                            color="success"
-                            variant="filled"
-                            sx={{ fontWeight: 'bold' }}
-                          />
-                        </Stack>
-                      ) : (
-                        <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
-                          ₩ {schedule.price.toLocaleString()}
-                        </Typography>
-                      )}
-                    </Box>
-
-                    {/* 상세 정보 확장 */}
-                    <Accordion 
-                      expanded={expandedCards.has(schedule.id)} 
-                      onChange={() => handleCardExpand(schedule.id)}
-                      sx={{ mb: 2, boxShadow: 'none', '&:before': { display: 'none' } }}
-                    >
-                      <AccordionSummary
-                        expandIcon={<ExpandMore />}
-                        sx={{ px: 0, minHeight: 'auto', '&.Mui-expanded': { minHeight: 'auto' } }}
-                      >
-                        <Typography variant="body2" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
-                          상세 정보 보기
-                        </Typography>
-                      </AccordionSummary>
-                      <AccordionDetails sx={{ px: 0, pt: 0 }}>
-                        {/* 난이도 가이드 */}
-                        {schedule.levelGuide && (
-                          <Box sx={{ mb: 3 }}>
-                            <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 2, display: 'flex', alignItems: 'center' }}>
-                              <Lightbulb sx={{ fontSize: 18, mr: 1, color: getLevelGuideColor(schedule.level) }} />
-                              난이도 가이드: {schedule.level}
-                            </Typography>
-                            <Grid container spacing={2}>
-                              <Grid item xs={12} md={4}>
-                                <Paper sx={{ p: 2, backgroundColor: '#f8f9fa', height: '100%' }}>
-                                  <Typography variant="caption" sx={{ fontWeight: 'bold', color: '#666' }}>
-                                    선수 지식
-                                  </Typography>
-                                  <List dense>
-                                    {schedule.levelGuide.prerequisites.map((item, index) => (
-                                      <ListItem key={index} sx={{ py: 0.5, px: 0 }}>
-                                        <ListItemIcon sx={{ minWidth: 20 }}>
-                                          <CheckCircleOutline sx={{ fontSize: 16, color: '#4caf50' }} />
-                                        </ListItemIcon>
-                                        <ListItemText 
-                                          primary={item} 
-                                          primaryTypographyProps={{ variant: 'caption' }}
-                                        />
-                                      </ListItem>
-                                    ))}
-                                  </List>
-                                </Paper>
-                              </Grid>
-                              <Grid item xs={12} md={4}>
-                                <Paper sx={{ p: 2, backgroundColor: '#f8f9fa', height: '100%' }}>
-                                  <Typography variant="caption" sx={{ fontWeight: 'bold', color: '#666' }}>
-                                    습득 기술
-                                  </Typography>
-                                  <List dense>
-                                    {schedule.levelGuide.skillsGained.map((item, index) => (
-                                      <ListItem key={index} sx={{ py: 0.5, px: 0 }}>
-                                        <ListItemIcon sx={{ minWidth: 20 }}>
-                                          <Star sx={{ fontSize: 16, color: '#ff9800' }} />
-                                        </ListItemIcon>
-                                        <ListItemText 
-                                          primary={item} 
-                                          primaryTypographyProps={{ variant: 'caption' }}
-                                        />
-                                      </ListItem>
-                                    ))}
-                                  </List>
-                                </Paper>
-                              </Grid>
-                              <Grid item xs={12} md={4}>
-                                <Paper sx={{ p: 2, backgroundColor: '#f8f9fa', height: '100%' }}>
-                                  <Typography variant="caption" sx={{ fontWeight: 'bold', color: '#666' }}>
-                                    추천 대상
-                                  </Typography>
-                                  <List dense>
-                                    {schedule.levelGuide.recommendedFor.map((item, index) => (
-                                      <ListItem key={index} sx={{ py: 0.5, px: 0 }}>
-                                        <ListItemIcon sx={{ minWidth: 20 }}>
-                                          <ThumbUp sx={{ fontSize: 16, color: '#2196f3' }} />
-                                        </ListItemIcon>
-                                        <ListItemText 
-                                          primary={item} 
-                                          primaryTypographyProps={{ variant: 'caption' }}
-                                        />
-                                      </ListItem>
-                                    ))}
-                                  </List>
-                                </Paper>
-                              </Grid>
-                            </Grid>
-                          </Box>
-                        )}
-                        
-                        {/* 차시별 수업 계획 */}
-                        <Box sx={{ mb: 3 }}>
-                          <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1, display: 'flex', alignItems: 'center' }}>
-                            <MenuBook sx={{ fontSize: 18, mr: 1 }} />
-                            차시별 수업 계획
-                          </Typography>
-                          {schedule.lessonPlans.map((lesson, index) => (
-                            <Paper key={index} sx={{ p: 2, mb: 1, backgroundColor: '#f8f9fa' }}>
-                              <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                                {lesson.session}차시: {lesson.title} ({lesson.duration})
-                              </Typography>
-                              <Box sx={{ mt: 1 }}>
-                                {lesson.objectives.map((objective, objIndex) => (
-                                  <Chip
-                                    key={objIndex}
-                                    label={objective}
-                                    size="small"
-                                    variant="outlined"
-                                    sx={{ mr: 0.5, mb: 0.5, fontSize: '0.75rem' }}
-                                  />
-                                ))}
-                              </Box>
-                            </Paper>
-                          ))}
-                        </Box>
-
-                        {/* 교구재 정보 */}
-                        {schedule.equipment && (
-                          <Box sx={{ mb: 3 }}>
-                            <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1, display: 'flex', alignItems: 'center' }}>
-                              <Build sx={{ fontSize: 18, mr: 1 }} />
-                              준비 교구재
-                            </Typography>
-                            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                              {schedule.equipment.map((item, index) => (
-                                <Chip
-                                  key={index}
-                                  label={item}
-                                  size="small"
-                                  color="secondary"
-                                  variant="filled"
-                                />
-                              ))}
-                            </Stack>
-                          </Box>
-                        )}
-
-                        {/* 수업 진행 이미지 */}
-                        <Box sx={{ mb: 3 }}>
-                          <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1, display: 'flex', alignItems: 'center' }}>
-                            <Photo sx={{ fontSize: 18, mr: 1 }} />
-                            수업 진행 모습
-                          </Typography>
-                          <ImageList sx={{ width: '100%', height: 200 }} cols={3} rowHeight={164}>
-                            {schedule.classImages.map((image, index) => (
-                              <ImageListItem key={index}>
-                                <img
-                                  src={image}
-                                  alt={`수업 이미지 ${index + 1}`}
-                                  loading="lazy"
-                                  style={{ objectFit: 'cover', borderRadius: 8 }}
-                                />
-                              </ImageListItem>
-                            ))}
-                          </ImageList>
-                        </Box>
-                        
-                        {/* 수강생 후기 */}
-                        {schedule.reviews && schedule.reviews.length > 0 && (
-                          <Box sx={{ mb: 3 }}>
-                            <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 2, display: 'flex', alignItems: 'center' }}>
-                              <Star sx={{ fontSize: 18, mr: 1, color: '#ffc107' }} />
-                              수강생 후기 ({schedule.totalReviews}개)
-                            </Typography>
-                            {schedule.reviews.slice(0, 2).map((review) => (
-                              <Paper key={review.id} sx={{ p: 2, mb: 1, backgroundColor: '#f8f9fa' }}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                                  <Avatar 
-                                    src={review.avatar} 
-                                    sx={{ width: 32, height: 32, mr: 1 }}
-                                  >
-                                    {review.studentName[0]}
-                                  </Avatar>
-                                  <Box sx={{ flex: 1 }}>
-                                    <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                                      {review.studentName}
-                                    </Typography>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                      <Rating value={review.rating} readOnly size="small" />
-                                      <Typography variant="caption" color="text.secondary">
-                                        {review.date}
-                                      </Typography>
-                                    </Box>
-                                  </Box>
-                                </Box>
-                                <Typography variant="body2" color="text.secondary">
-                                  {review.comment}
-                                </Typography>
-                              </Paper>
-                            ))}
-                          </Box>
-                        )}
-                        
-                        {/* 할인 정보 */}
-                        {schedule.discounts && schedule.discounts.filter(d => d.isActive).length > 0 && (
-                          <Box sx={{ mb: 2 }}>
-                            <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1, display: 'flex', alignItems: 'center' }}>
-                              <Discount sx={{ fontSize: 18, mr: 1, color: '#f44336' }} />
-                              진행중인 할인 혜택
-                            </Typography>
-                            <Stack spacing={1}>
-                              {schedule.discounts.filter(d => d.isActive).map((discount, index) => (
-                                <Alert 
-                                  key={index}
-                                  severity="error" 
-                                  icon={<LocalOffer />}
-                                  sx={{ 
-                                    backgroundColor: '#fff3e0',
-                                    border: '1px solid #ffb74d'
-                                  }}
-                                >
-                                  <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                                    {discount.title} ({discount.discountRate}% 할인)
-                                  </Typography>
-                                  <Typography variant="caption">
-                                    {discount.description} • {discount.condition} • {discount.validUntil}까지
-                                  </Typography>
-                                </Alert>
-                              ))}
-                            </Stack>
-                          </Box>
-                        )}
-                      </AccordionDetails>
-                    </Accordion>
-
-                    <Divider sx={{ my: 2 }} />
-
-                    {/* 카드 푸터 */}
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Box sx={{ display: 'flex', gap: 1 }}>
-                        <Chip
-                          label={schedule.level}
-                          size="small"
-                          sx={{
-                            backgroundColor: getLevelColor(schedule.level),
-                            color: 'white',
-                            fontWeight: 'bold'
-                          }}
-                        />
-                        <Chip
-                          label={schedule.category}
-                          size="small"
-                          variant="outlined"
-                        />
-                      </Box>
+                      {/* 액션 버튼 */}
                       <Button
                         variant="contained"
-                        size="medium"
-                        endIcon={schedule.registrationStatus === '신청완료' ? undefined : <ArrowForward />}
-                        onClick={() => handleRegistrationToggle(schedule)}
+                        size="small"
+                        fullWidth
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRegistrationToggle(schedule);
+                        }}
                         disabled={schedule.registrationStatus === '미신청' && schedule.participants >= schedule.maxParticipants}
                         sx={{
                           background: schedule.registrationStatus === '신청완료' 
                             ? 'linear-gradient(45deg, #f44336, #ff6659)'
                             : 'linear-gradient(45deg, #1976d2, #42a5f5)',
                           fontWeight: 'bold',
-                          px: 3,
-                          py: 1,
+                          fontSize: '0.8rem',
+                          py: 0.8,
                           transition: 'all 0.3s ease',
                           '&:hover': {
                             background: schedule.registrationStatus === '신청완료'
                               ? 'linear-gradient(45deg, #d32f2f, #f44336)'
                               : 'linear-gradient(45deg, #1565c0, #1976d2)',
-                            transform: 'translateY(-2px)',
-                            boxShadow: 4
+                            transform: 'translateY(-1px)',
+                            boxShadow: 3
+                          },
+                          '&:disabled': {
+                            background: '#ccc',
+                            color: '#666'
                           }
                         }}
                       >
-                        {schedule.registrationStatus === '신청완료' ? '취소하기' : '신청하기'}
+                        {schedule.participants >= schedule.maxParticipants ? '마감' :
+                         schedule.registrationStatus === '신청완료' ? '취소하기' : '신청하기'}
                       </Button>
                     </Box>
                   </CardContent>
