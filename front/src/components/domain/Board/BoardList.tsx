@@ -81,8 +81,12 @@ export default function BoardList({
    * 아이템 클릭 시 상세 페이지로 이동
    */
   const handleItemClick = (id?: number) => {
-    // baseUrl로만 이동 (개별 상세 페이지가 없는 경우 대응)
-    router.push(baseUrl);
+    if (id) {
+      router.push(`${baseUrl}/${id}`);
+    } else {
+      // ID가 없는 경우 baseUrl로 이동
+      router.push(baseUrl);
+    }
   };
 
   return (

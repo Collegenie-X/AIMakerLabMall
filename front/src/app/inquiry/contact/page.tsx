@@ -919,7 +919,7 @@ export default function OutreachInquiryPage() {
           color: 'white',
           textAlign: 'center'
         }}>
-          <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+          <Typography variant="h6" component="div" sx={{ fontWeight: 'bold' }}>
             코딩 출강 교육 문의 작성
           </Typography>
         </DialogTitle>
