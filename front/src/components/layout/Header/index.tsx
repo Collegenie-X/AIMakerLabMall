@@ -92,21 +92,40 @@ export default function Header() {
    */
   const handleLogin = async () => {
     try {
+      console.log('로그인 시도:', { email: loginData.email });
+      
       const response = await axios.post('http://localhost:8000/api/v1/auth/login/', {
         email: loginData.email,
         password: loginData.password
       });
 
+      console.log('로그인 응답:', response.data);
+
       if (response.status === 200 && response.data) {
+        // 토큰 저장
         localStorage.setItem("token", response.data.tokens.access);
         localStorage.setItem("refresh_token", response.data.tokens.refresh);
-        localStorage.setItem("user", response.data.user.name);
-        setUserName(response.data.user.name);
+        
+        // 사용자 정보 저장 - API 응답 구조에 맞게 수정
+        const userName = response.data.user.name || response.data.user.username || response.data.user.email;
+        localStorage.setItem("user", userName);
+        setUserName(userName);
+        
+        console.log('로그인 성공, 사용자:', userName);
         handleLoginClose();
       }
-    } catch (err) {
-      setError('로그인에 실패했습니다.');
-      console.error('로그인 에러:', err);
+    } catch (err: any) {
+      console.error('로그인 에러 상세:', err);
+      console.error('에러 응답:', err.response?.data);
+      
+      let errorMessage = '로그인에 실패했습니다.';
+      if (err.response?.data?.detail) {
+        errorMessage = err.response.data.detail;
+      } else if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      }
+      
+      setError(errorMessage);
     }
   };
 

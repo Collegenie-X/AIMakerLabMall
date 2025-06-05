@@ -78,7 +78,8 @@ export const logout = (): void => {
 export const isAuthenticated = (): boolean => {
   if (typeof window === 'undefined') return false;
   
-  return !!localStorage.getItem('accessToken');
+  // Header 컴포넌트와 동일한 키('token') 사용
+  return !!localStorage.getItem('token');
 };
 
 /**
@@ -89,15 +90,9 @@ export const isAuthenticated = (): boolean => {
 export const getCurrentUser = () => {
   if (typeof window === 'undefined') return null;
   
-  const userJson = localStorage.getItem('user');
-  if (!userJson) return null;
-  
-  try {
-    return JSON.parse(userJson);
-  } catch (error) {
-    console.error('사용자 정보 파싱 오류:', error);
-    return null;
-  }
+  // Header 컴포넌트와 동일한 방식으로 사용자 이름 가져오기
+  const userName = localStorage.getItem('user');
+  return userName ? { name: userName } : null;
 };
 
 // 비밀번호 재설정 요청 API
