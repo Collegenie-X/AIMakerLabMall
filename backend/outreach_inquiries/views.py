@@ -4,12 +4,15 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from django_filters.rest_framework import DjangoFilterBackend
-from django.db.models import Q
-from .models import OutreachInquiry
+from django.db.models import Q, F
+from .models import OutreachInquiry, InternalClass
 from .serializers import (
     OutreachInquirySerializer,
     OutreachInquiryCreateSerializer,
-    OutreachInquiryListSerializer
+    OutreachInquiryListSerializer,
+    InternalClassSerializer,
+    InternalClassListSerializer,
+    ClassEnrollmentSerializer
 )
 
 class OutreachInquiryViewSet(viewsets.ModelViewSet):
@@ -20,8 +23,8 @@ class OutreachInquiryViewSet(viewsets.ModelViewSet):
     queryset = OutreachInquiry.objects.all()
     serializer_class = OutreachInquirySerializer
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ['status', 'course_type', 'student_grade']
-    search_fields = ['title', 'organization_name', 'contact_person']
+    filterset_fields = ['status', 'course_type', 'student_grade', 'duration']
+    search_fields = ['title', 'requester_name', 'location']
     ordering_fields = ['created_at', 'preferred_date', 'student_count']
     ordering = ['-created_at']  # 기본 정렬: 최신순
     
@@ -79,7 +82,8 @@ class OutreachInquiryViewSet(viewsets.ModelViewSet):
             'in_progress_count': (
                 status_counts.get('검토중', 0) + 
                 status_counts.get('견적발송', 0) + 
-                status_counts.get('확정', 0)
+                status_counts.get('확정', 0) +
+                status_counts.get('진행중', 0)
             ),
             'completed_count': status_counts.get('완료', 0)
         })
@@ -123,3 +127,95 @@ class OutreachInquiryViewSet(viewsets.ModelViewSet):
     def perform_update(self, serializer):
         """문의 수정 시 추가 처리"""
         serializer.save()
+
+
+class InternalClassViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    내부 교육 수업 ViewSet
+    Read-Only 기능만 제공 (Admin에서 관리)
+    """
+    queryset = InternalClass.objects.filter(is_active=True)
+    serializer_class = InternalClassSerializer
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ['course_type', 'class_type', 'target_grade', 'instructor']
+    search_fields = ['title', 'instructor', 'description']
+    ordering_fields = ['start_date', 'price', 'current_students']
+    ordering = ['start_date']  # 기본 정렬: 시작일순
+    permission_classes = [AllowAny]  # 모든 사용자 조회 허용
+    
+    def get_serializer_class(self):
+        """액션에 따라 다른 시리얼라이저 사용"""
+        if self.action == 'list':
+            return InternalClassListSerializer
+        return InternalClassSerializer
+    
+    @action(detail=False, methods=['get'])
+    def available(self, request):
+        """
+        신청 가능한 수업만 반환
+        GET /api/v1/internal-classes/available/
+        """
+        available_classes = self.queryset.filter(
+            is_active=True,
+            current_students__lt=F('max_students')
+        )
+        serializer = InternalClassListSerializer(available_classes, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['get'])
+    def by_course_type(self, request):
+        """
+        교육 과정별 수업 목록
+        GET /api/v1/internal-classes/by_course_type/?course_type=python
+        """
+        course_type = request.query_params.get('course_type')
+        if not course_type:
+            return Response(
+                {'error': 'course_type 파라미터가 필요합니다.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+            
+        classes = self.queryset.filter(course_type=course_type)
+        serializer = InternalClassListSerializer(classes, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=True, methods=['post'])
+    def enroll(self, request, pk=None):
+        """
+        수업 신청 (OutreachInquiry로 변환)
+        POST /api/v1/internal-classes/{id}/enroll/
+        """
+        internal_class = self.get_object()
+        
+        # 신청 데이터에 class_id 추가
+        enrollment_data = request.data.copy()
+        enrollment_data['class_id'] = internal_class.id
+        
+        serializer = ClassEnrollmentSerializer(data=enrollment_data)
+        if serializer.is_valid():
+            inquiry = serializer.save()
+            
+            # 신청자 수 증가
+            internal_class.current_students += 1
+            internal_class.save()
+            
+            return Response({
+                'message': '수업 신청이 완료되었습니다.',
+                'inquiry_id': inquiry.id,
+                'class_title': internal_class.title
+            }, status=status.HTTP_201_CREATED)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(detail=False, methods=['get'])
+    def popular(self, request):
+        """
+        인기 수업 목록 (신청률 기준)
+        GET /api/v1/internal-classes/popular/
+        """
+        popular_classes = self.queryset.filter(
+            current_students__gt=0
+        ).order_by('-current_students')[:5]
+        
+        serializer = InternalClassListSerializer(popular_classes, many=True)
+        return Response(serializer.data)
