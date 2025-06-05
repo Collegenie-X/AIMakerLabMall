@@ -45,7 +45,9 @@ const menuItems = [
       { name: '메이커 / AI제품', link: '/products/maker-ai' },
       { name: 'AI교육 프로그램', link: '/products/ai-education' },
       { name: '수업자료 다운로드', link: '/products/downloads' },
-      { name: '자주묻는질문(FAQ)', link: '/products/faq' }
+      { name: '교육키트구매질문', link: '/inquiries' },
+      { name: '자주묻는질문(FAQ)', link: '/products/faq' },
+      
     ]
   },
   {

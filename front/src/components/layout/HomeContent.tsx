@@ -1,6 +1,6 @@
 'use client';
 
-import { Box, Container, Card, CardContent, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, Chip } from "@mui/material";
+import { Box, Container } from "@mui/material";
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import HeroBanner from "@/components/domain/HeroBanner";
@@ -10,10 +10,9 @@ import { BoardItem } from "@/components/domain/Board/BoardList";
 import Statistics from "@/components/domain/Statistics";
 import { Slide } from "@/services/slidesService";
 import ProductListContainer from "@/components/domain/ProductListContainer";
-import { getInquiries, getPaginatedInquiries } from "@/services/inquiryService";
+import { getPaginatedInquiries } from "@/services/inquiryService";
 import InquiryDialog from "@/components/domain/Board/InquiryDialog";
 import PaginatedBoardList from "@/components/domain/Board/PaginatedBoardList";
-import { Business, Add, CalendarMonth } from "@mui/icons-material";
 
 // 카테고리 링크
 const categoryLinks = [
@@ -22,189 +21,33 @@ const categoryLinks = [
   { label: "소스 코드 다운로드", url: "/downloads" }
 ];
 
-// 코딩 출강 교육 문의 데이터 (정적 데이터)
-const outreachInquiryItems = [
+// 코딩 출강 교육 문의 데이터 (정적 데이터) - BoardItem 형태로 변환
+const outreachInquiryItems: BoardItem[] = [
   {
     id: 1,
     title: '초등학교 3학년 대상 앱 인벤터 교육',
-    organizationName: '서울초등학교',
-    contactPerson: '김선생',
-    courseType: 'app-inventor',
-    studentCount: 25,
-    status: '접수대기',
-    createdAt: '2025.05.29'
+    inquiry_type: 'waiting',
+    created_at: '2025-05-29T00:00:00Z',
+    requester_name: '김선생',
   },
   {
     id: 2,
     title: '중학교 아두이노 IoT 프로젝트 수업',
-    organizationName: '강남중학교', 
-    contactPerson: '이담임',
-    courseType: 'arduino',
-    studentCount: 30,
-    status: '검토중',
-    createdAt: '2025.05.29'
+    inquiry_type: 'reviewing',
+    created_at: '2025-05-29T00:00:00Z',
+    requester_name: '이담임',
   },
   {
     id: 3,
     title: '고등학교 Python AI 기초 교육',
-    organizationName: '명덕고등학교',
-    contactPerson: '박교사',
-    courseType: 'python',
-    studentCount: 35,
-    status: '견적발송',
-    createdAt: '2025.05.28'
+    inquiry_type: 'completed',
+    created_at: '2025-05-28T00:00:00Z',
+    requester_name: '박교사',
   }
 ];
 
 interface HomeContentProps {
   slides: Slide[];
-}
-
-/**
- * 교육 과정명 반환
- */
-const getCourseTypeName = (courseType: string) => {
-  switch (courseType) {
-    case 'app-inventor': return '앱 인벤터';
-    case 'arduino': return '아두이노';
-    case 'raspberry-pi': return 'Raspberry Pi';
-    case 'ai': return 'AI 코딩';
-    case 'python': return '파이썬 코딩';
-    default: return courseType;
-  }
-};
-
-/**
- * 상태별 색상 반환
- */
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case '접수대기': return '#9e9e9e';
-    case '검토중': return '#ff9800';
-    case '견적발송': return '#2196f3';
-    case '확정': return '#4caf50';
-    case '완료': return '#8bc34a';
-    default: return '#9e9e9e';
-  }
-};
-
-/**
- * 코딩 출강 교육 문의 컴포넌트
- */
-function OutreachInquirySection() {
-  const router = useRouter();
-
-  const handleRowClick = () => {
-    router.push('/inquiry/contact');
-  };
-
-  const handleAddClick = () => {
-    router.push('/inquiry/contact');
-  };
-
-  return (
-    <Card sx={{ width: '100%', boxShadow: 2 }}>
-      <CardContent sx={{ p: 2 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-            코딩 출강 및 수업 문의
-          </Typography>
-          <Button
-            variant="contained"
-            startIcon={<Add />}
-            onClick={handleAddClick}
-            size="small"
-            sx={{ 
-              background: 'linear-gradient(45deg, #1976d2, #42a5f5)',
-              fontSize: '0.8rem'
-            }}
-          >
-            새 문의
-          </Button>
-        </Box>
-        
-        <TableContainer component={Paper} sx={{ boxShadow: 1 }}>
-          <Table size="small">
-            <TableHead>
-              <TableRow sx={{ backgroundColor: '#f8f9fa' }}>
-                <TableCell sx={{ fontWeight: 'bold', width: '45%' }}>제목 / 기관명</TableCell>
-                <TableCell sx={{ fontWeight: 'bold', width: '20%' }}>담당자</TableCell>
-                <TableCell sx={{ fontWeight: 'bold', width: '15%' }}>교육과정</TableCell>
-                <TableCell sx={{ fontWeight: 'bold', width: '20%' }}>상태</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {outreachInquiryItems.map((inquiry) => (
-                <TableRow 
-                  key={inquiry.id}
-                  onClick={handleRowClick}
-                  sx={{ 
-                    '&:hover': { backgroundColor: '#f5f5f5' },
-                    cursor: 'pointer',
-                    transition: 'background-color 0.2s ease'
-                  }}
-                >
-                  <TableCell>
-                    <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 0.5 }}>
-                      {inquiry.title}
-                    </Typography>
-                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                      <Business sx={{ fontSize: 14, mr: 0.5, color: '#666' }} />
-                      <Typography variant="caption" color="text.secondary">
-                        {inquiry.organizationName}
-                      </Typography>
-                    </Box>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                      {inquiry.contactPerson}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {inquiry.studentCount}명
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Chip
-                      label={getCourseTypeName(inquiry.courseType)}
-                      size="small"
-                      color="primary"
-                      variant="outlined"
-                      sx={{ fontSize: '0.7rem' }}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Chip
-                      label={inquiry.status}
-                      size="small"
-                      sx={{
-                        backgroundColor: getStatusColor(inquiry.status),
-                        color: 'white',
-                        fontWeight: 'bold',
-                        fontSize: '0.7rem'
-                      }}
-                    />
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
-                      {inquiry.createdAt}
-                    </Typography>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-        
-        <Box sx={{ textAlign: 'center', mt: 2 }}>
-          <Button 
-            variant="outlined" 
-            onClick={handleRowClick}
-            sx={{ fontSize: '0.8rem' }}
-          >
-            전체 목록 보기
-          </Button>
-        </Box>
-      </CardContent>
-    </Card>
-  );
 }
 
 /**
@@ -259,6 +102,11 @@ export default function HomeContent({ slides }: HomeContentProps) {
     setInquiryDialogOpen(true);
   };
 
+  // 코딩 출강 문의 작성 페이지로 이동
+  const handleAddOutreachInquiry = () => {
+    router.push('/inquiry/contact');
+  };
+
   return (
     <Box>
       <HeroBanner initialSlides={slides} />
@@ -277,7 +125,13 @@ export default function HomeContent({ slides }: HomeContentProps) {
           itemsPerPage={5}
           baseUrl="/inquiries"
         />
-        <OutreachInquirySection />
+        <PaginatedBoardList
+          title="코딩 출강 및 수업 문의"
+          items={outreachInquiryItems}
+          onAddClick={handleAddOutreachInquiry}
+          itemsPerPage={5}
+          baseUrl="/inquiry/contact"
+        />
       </Container>
       <Statistics />
       

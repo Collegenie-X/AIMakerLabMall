@@ -8,6 +8,9 @@ import AddCircleIcon from '@mui/icons-material/AddCircle';
 import ForumIcon from '@mui/icons-material/Forum';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import SchoolIcon from '@mui/icons-material/School';
+import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
+import SearchIcon from '@mui/icons-material/Search';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { formatDate } from '@/utils/dateUtils';
 
 // 아이콘 매핑
@@ -19,7 +22,10 @@ const iconMap: Record<string, React.ReactNode> = {
   'product': <ShoppingCartIcon color="primary" />,
   'price': <KeyIcon color="secondary" />,
   'delivery': <ForumIcon color="action" />,
-  'etc': <SchoolIcon color="warning" />
+  'etc': <SchoolIcon color="warning" />,
+  'waiting': <HourglassEmptyIcon sx={{ color: '#9e9e9e' }} />,
+  'reviewing': <SearchIcon sx={{ color: '#ff9800' }} />,
+  'completed': <CheckCircleIcon sx={{ color: '#4caf50' }} />
 };
 
 // 문의 유형 한글 매핑
@@ -27,7 +33,10 @@ const inquiryTypeMap: Record<string, string> = {
   'product': '교구문의',
   'price': '가격문의',
   'delivery': '배송문의',
-  'etc': '기타문의'
+  'etc': '기타문의',
+  'waiting': '접수대기',
+  'reviewing': '검토중',
+  'completed': '완료'
 };
 
 export interface BoardItem {
@@ -72,9 +81,8 @@ export default function BoardList({
    * 아이템 클릭 시 상세 페이지로 이동
    */
   const handleItemClick = (id?: number) => {
-    if (id) {
-      router.push(`${baseUrl}/${id}`);
-    }
+    // baseUrl로만 이동 (개별 상세 페이지가 없는 경우 대응)
+    router.push(baseUrl);
   };
 
   return (
