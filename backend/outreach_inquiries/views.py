@@ -6,6 +6,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Q, F
 from .models import OutreachInquiry, InternalClass
+from .permissions import IsOwnerOrReadOnly
 from .serializers import (
     OutreachInquirySerializer,
     OutreachInquiryCreateSerializer,
@@ -18,15 +19,44 @@ from .serializers import (
 class OutreachInquiryViewSet(viewsets.ModelViewSet):
     """
     코딩 출강 교육 문의 ViewSet
-    CRUD 기능을 모두 제공합니다.
+    - 목록 조회: 모든 사용자 가능
+    - 상세 조회: 모든 사용자 가능  
+    - 생성: 모든 사용자 가능 (로그인 시 작성자 자동 설정)
+    - 수정/삭제: 작성자만 가능
     """
     queryset = OutreachInquiry.objects.all()
     serializer_class = OutreachInquirySerializer
-    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ['status', 'course_type', 'student_grade', 'duration']
+    permission_classes = [AllowAny]  # 임시로 모든 사용자 허용으로 변경
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]  # DjangoFilterBackend 제거
+    # filterset_fields = ['status', 'course_type', 'student_grade', 'duration']  # 주석 처리
     search_fields = ['title', 'requester_name', 'location']
     ordering_fields = ['created_at', 'preferred_date', 'student_count']
     ordering = ['-created_at']  # 기본 정렬: 최신순
+    
+    def get_queryset(self):
+        """쿼리 파라미터를 사용한 필터링"""
+        queryset = OutreachInquiry.objects.all()
+        
+        # 상태 필터
+        status_param = self.request.query_params.get('status', None)
+        if status_param:
+            queryset = queryset.filter(status=status_param)
+            
+        # 교육 과정 필터
+        course_type = self.request.query_params.get('course_type', None)
+        if course_type:
+            queryset = queryset.filter(course_type=course_type)
+            
+        # 검색어 필터
+        search = self.request.query_params.get('search', None)
+        if search:
+            queryset = queryset.filter(
+                Q(title__icontains=search) |
+                Q(requester_name__icontains=search) |
+                Q(location__icontains=search)
+            )
+        
+        return queryset.order_by('-created_at')
     
     def get_serializer_class(self):
         """액션에 따라 다른 시리얼라이저 사용"""
@@ -36,15 +66,34 @@ class OutreachInquiryViewSet(viewsets.ModelViewSet):
             return OutreachInquiryListSerializer
         return OutreachInquirySerializer
     
-    def get_permissions(self):
-        """액션에 따라 다른 권한 설정"""
-        if self.action in ['create', 'list', 'retrieve']:
-            # 생성, 목록 조회, 상세 조회는 모든 사용자 허용
-            permission_classes = [AllowAny]
+    def perform_create(self, serializer):
+        """문의 생성 시 로그인한 사용자를 작성자로 설정"""
+        # 로그인한 사용자인 경우 작성자로 설정
+        if self.request.user and self.request.user.is_authenticated:
+            serializer.save(user=self.request.user)
         else:
-            # 수정, 삭제는 인증된 사용자만 허용
-            permission_classes = [IsAuthenticated]
-        return [permission() for permission in permission_classes]
+            # 비로그인 사용자는 user=None으로 저장
+            serializer.save(user=None)
+    
+    def perform_update(self, serializer):
+        """문의 수정 시 추가 처리"""
+        serializer.save()
+    
+    @action(detail=False, methods=['get'])
+    def my_inquiries(self, request):
+        """
+        내 문의 목록 조회 (로그인 사용자만)
+        GET /api/v1/outreach-inquiries/my_inquiries/
+        """
+        if not request.user or not request.user.is_authenticated:
+            return Response(
+                {'error': '로그인이 필요합니다.'},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        
+        my_inquiries = self.queryset.filter(user=request.user)
+        serializer = OutreachInquiryListSerializer(my_inquiries, many=True)
+        return Response(serializer.data)
     
     @action(detail=False, methods=['get'])
     def statistics(self, request):
@@ -101,9 +150,15 @@ class OutreachInquiryViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['patch'])
     def update_status(self, request, pk=None):
         """
-        문의 상태만 업데이트
+        문의 상태만 업데이트 (관리자 전용)
         PATCH /api/v1/outreach-inquiries/{id}/update_status/
         """
+        if not request.user or not request.user.is_staff:
+            return Response(
+                {'error': '관리자만 상태를 변경할 수 있습니다.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+            
         inquiry = self.get_object()
         new_status = request.data.get('status')
         
@@ -118,15 +173,6 @@ class OutreachInquiryViewSet(viewsets.ModelViewSet):
         
         serializer = self.get_serializer(inquiry)
         return Response(serializer.data)
-    
-    def perform_create(self, serializer):
-        """문의 생성 시 추가 처리"""
-        # 필요한 경우 여기에 이메일 알림 등의 로직 추가 가능
-        serializer.save()
-        
-    def perform_update(self, serializer):
-        """문의 수정 시 추가 처리"""
-        serializer.save()
 
 
 class InternalClassViewSet(viewsets.ReadOnlyModelViewSet):
@@ -136,12 +182,38 @@ class InternalClassViewSet(viewsets.ReadOnlyModelViewSet):
     """
     queryset = InternalClass.objects.filter(is_active=True)
     serializer_class = InternalClassSerializer
-    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ['course_type', 'class_type', 'target_grade', 'instructor']
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]  # DjangoFilterBackend 제거
+    # filterset_fields = ['course_type', 'class_type', 'target_grade', 'instructor']  # 주석 처리
     search_fields = ['title', 'instructor', 'description']
     ordering_fields = ['start_date', 'price', 'current_students']
     ordering = ['start_date']  # 기본 정렬: 시작일순
     permission_classes = [AllowAny]  # 모든 사용자 조회 허용
+    
+    def get_queryset(self):
+        """쿼리 파라미터를 사용한 필터링"""
+        queryset = InternalClass.objects.filter(is_active=True)
+        
+        # 교육 과정 필터
+        course_type = self.request.query_params.get('course_type', None)
+        if course_type:
+            queryset = queryset.filter(course_type=course_type)
+            
+        # 수업 형태 필터  
+        class_type = self.request.query_params.get('class_type', None)
+        if class_type:
+            queryset = queryset.filter(class_type=class_type)
+            
+        # 대상 학년 필터
+        target_grade = self.request.query_params.get('target_grade', None)
+        if target_grade:
+            queryset = queryset.filter(target_grade=target_grade)
+            
+        # 강사 필터
+        instructor = self.request.query_params.get('instructor', None)
+        if instructor:
+            queryset = queryset.filter(instructor__icontains=instructor)
+        
+        return queryset.order_by('start_date')
     
     def get_serializer_class(self):
         """액션에 따라 다른 시리얼라이저 사용"""
@@ -191,9 +263,17 @@ class InternalClassViewSet(viewsets.ReadOnlyModelViewSet):
         enrollment_data = request.data.copy()
         enrollment_data['class_id'] = internal_class.id
         
-        serializer = ClassEnrollmentSerializer(data=enrollment_data)
+        serializer = ClassEnrollmentSerializer(
+            data=enrollment_data,
+            context={'request': request}
+        )
+        
         if serializer.is_valid():
-            inquiry = serializer.save()
+            # 로그인한 사용자인 경우 작성자로 설정
+            if request.user and request.user.is_authenticated:
+                inquiry = serializer.save(user=request.user)
+            else:
+                inquiry = serializer.save(user=None)
             
             # 신청자 수 증가
             internal_class.current_students += 1
@@ -202,7 +282,8 @@ class InternalClassViewSet(viewsets.ReadOnlyModelViewSet):
             return Response({
                 'message': '수업 신청이 완료되었습니다.',
                 'inquiry_id': inquiry.id,
-                'class_title': internal_class.title
+                'class_title': internal_class.title,
+                'status': '접수대기'
             }, status=status.HTTP_201_CREATED)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

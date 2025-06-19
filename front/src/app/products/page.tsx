@@ -79,7 +79,7 @@ export default function ProductList() {
                     {product.name}
                   </Typography>
                   <Typography variant="body2" color="text.secondary" gutterBottom>
-                    수업시간: {product.duration}
+                    수업시간: {product.duration} 
                   </Typography>
                   <Typography variant="h6" color="primary">
                     {new Intl.NumberFormat('ko-KR', {

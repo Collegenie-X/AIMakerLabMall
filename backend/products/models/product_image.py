@@ -7,6 +7,8 @@ from products.models.product import Product
 class ProductImage(models.Model):
     """
     상품 이미지 정보를 저장하는 모델
+    - Product와 ForeignKey 관계
+    - 대표 이미지 자동 지정 로직 포함
     """
     product = models.ForeignKey(
         Product,
@@ -37,9 +39,27 @@ class ProductImage(models.Model):
         return f"{self.product.name}의 이미지"
 
     def clean(self):
+        """
+        모델 유효성 검사 수행
+        - Product가 저장된 경우에만 대표 이미지 로직 적용
+        - 신규 Product의 경우 안전한 처리
+        """
         super().clean()
-        # 같은 제품의 다른 이미지들 중 thumbnail이 없는 경우 첫 번째 이미지를 thumbnail로 자동 지정
-        if not self.is_thumbnail and not self.product.images.filter(is_thumbnail=True).exists():
+        
+        # Product가 아직 저장되지 않은 경우 검증 건너뛰기
+        if not self.product or not self.product.pk:
+            return
+            
+        # 기존 Product에 대해서만 대표 이미지 로직 적용
+        self._ensure_thumbnail_assignment()
+    
+    def _ensure_thumbnail_assignment(self):
+        """
+        대표 이미지 자동 지정 로직
+        - 대표 이미지가 없는 경우 첫 번째 이미지를 대표로 지정
+        """
+        if (not self.is_thumbnail and 
+            not self.product.images.filter(is_thumbnail=True).exists()):
             self.is_thumbnail = True
 
     @property
@@ -47,6 +67,9 @@ class ProductImage(models.Model):
         """
         이미지 URL을 반환하는 속성
         CKEditor에서 업로드한 이미지의 경우 media URL을 포함하여 반환
+        
+        Returns:
+            str: 이미지 URL 또는 None
         """
         if self.image:
             if not self.image.url.startswith(settings.MEDIA_URL):

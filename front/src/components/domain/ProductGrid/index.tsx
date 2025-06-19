@@ -104,7 +104,7 @@ export default function ProductGrid({ products, columns = 3 }: ProductGridProps)
               </ProductTitle>
               {product.duration && (
                 <DurationText>
-                  수업시간: {product.duration}
+                  수업시간: {product.duration} 시간
                 </DurationText>
               )}
             </CardContent>

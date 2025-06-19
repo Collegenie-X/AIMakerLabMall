@@ -29,6 +29,11 @@ interface MenuItemProps {
   handleClose: () => void;
 }
 
+/**
+ * 메뉴 항목 컴포넌트
+ * - 드롭다운 메뉴와 팝업 기능 제공
+ * - 메뉴 클릭 시 자동 닫힌 기능 포함
+ */
 export const MenuItem = ({
   menu,
   index,
@@ -37,46 +42,61 @@ export const MenuItem = ({
   handleMenuClick,
   handleMenuEnter,
   handleClose
-}: MenuItemProps) => (
-  <Box
-    onMouseEnter={(e) => handleMenuEnter(e, index)}
-    sx={{ position: 'relative' }}
-  >
-    <Button 
-      color="inherit"
-      sx={{ fontWeight: 'bold' }}
-      onClick={(e) => handleMenuClick(e, index)}
+}: MenuItemProps) => {
+  
+  /**
+   * 메뉴 항목 클릭 핸들러
+   * - 페이지 이동 전 팝업 메뉴 닫기
+   */
+  const handleItemClick = () => {
+    handleClose();
+  };
+
+  return (
+    <Box
+      onMouseEnter={(e) => handleMenuEnter(e, index)}
+      sx={{ position: 'relative' }}
     >
-      {menu.title}
-    </Button>
-    <Popper
-      open={openMenuIndex === index}
-      anchorEl={anchorEl}
-      placement="bottom-start"
-      sx={{ zIndex: 1001, minWidth: '140px' }}
-    >
-      <ClickAwayListener onClickAway={handleClose}>
-        <Paper 
-          elevation={3}
-          sx={{ 
-            mt: 2,
-            borderRadius: '5px',
-          }}
-        >
-          {menu.items.map((item, itemIndex) => (
-            <StyledLink
-              key={itemIndex}
-              href={item.link}
-            >
-              <MenuItemBox>
-                {item.name}
-              </MenuItemBox>
-            </StyledLink>
-          ))}
-        </Paper>
-      </ClickAwayListener>
-    </Popper>
-  </Box>
-);
+      <Button 
+        color="inherit"
+        sx={{ fontWeight: 'bold' }}
+        onClick={(e) => handleMenuClick(e, index)}
+      >
+        {menu.title}
+      </Button>
+      <Popper
+        open={openMenuIndex === index}
+        anchorEl={anchorEl}
+        placement="bottom-start"
+        sx={{ 
+          zIndex: 1200,
+          minWidth: '140px' 
+        }}
+      >
+        <ClickAwayListener onClickAway={handleClose}>
+          <Paper 
+            elevation={3}
+            sx={{ 
+              mt: 2,
+              borderRadius: '5px',
+            }}
+          >
+            {menu.items.map((item, itemIndex) => (
+              <StyledLink
+                key={itemIndex}
+                href={item.link}
+                onClick={handleItemClick}
+              >
+                <MenuItemBox>
+                  {item.name}
+                </MenuItemBox>
+              </StyledLink>
+            ))}
+          </Paper>
+        </ClickAwayListener>
+      </Popper>
+    </Box>
+  );
+};
 
 export default MenuItem; 

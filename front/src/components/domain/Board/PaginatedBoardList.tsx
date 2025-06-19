@@ -12,6 +12,7 @@ import BoardList, { BoardItem } from './BoardList';
  * @param onAddClick - 글 작성 버튼 클릭 핸들러
  * @param itemsPerPage - 페이지당 표시할 아이템 수
  * @param baseUrl - 게시물 상세 페이지 기본 URL
+ * @param onItemClick - 커스텀 아이템 클릭 핸들러
  * @returns 페이지네이션이 적용된 게시판 컴포넌트
  */
 export default function PaginatedBoardList({
@@ -19,13 +20,15 @@ export default function PaginatedBoardList({
   items,
   onAddClick,
   itemsPerPage = 5,
-  baseUrl = '/inquiries'
+  baseUrl = '/inquiries',
+  onItemClick
 }: {
   title: string;
   items: BoardItem[];
   onAddClick: () => void;
   itemsPerPage?: number;
   baseUrl?: string;
+  onItemClick?: (item: BoardItem) => void;
 }) {
   // 현재 페이지 상태
   const [currentPage, setCurrentPage] = useState(1);
@@ -51,6 +54,7 @@ export default function PaginatedBoardList({
         onAddClick={onAddClick}
         maxItems={itemsPerPage}
         baseUrl={baseUrl}
+        onItemClick={onItemClick}
       />
       
       {/* 페이지네이션 (아이템이 itemsPerPage보다 많을 때만 표시) */}

@@ -57,6 +57,7 @@ interface BoardListProps {
   onAddClick: () => void;
   maxItems?: number;
   baseUrl?: string;
+  onItemClick?: (item: BoardItem) => void;
 }
 
 /**
@@ -68,7 +69,8 @@ export default function BoardList({
   items, 
   onAddClick, 
   maxItems = 5,
-  baseUrl = '/inquiries'
+  baseUrl = '/inquiries',
+  onItemClick
 }: BoardListProps) {
   const router = useRouter();
   
@@ -78,13 +80,19 @@ export default function BoardList({
   const displayItems = items.slice(0, maxItems);
   
   /**
-   * 아이템 클릭 시 상세 페이지로 이동
+   * 아이템 클릭 시 상세 페이지로 이동 또는 커스텀 핸들러 실행
    */
-  const handleItemClick = (id?: number) => {
-    if (id) {
-      router.push(`${baseUrl}/${id}`);
+  const handleItemClick = (item: BoardItem) => {
+    // 커스텀 클릭 핸들러가 있으면 우선 실행
+    if (onItemClick) {
+      onItemClick(item);
+      return;
+    }
+    
+    // 기본 동작: ID가 있으면 상세 페이지로, 없으면 baseUrl로 이동
+    if (item.id) {
+      router.push(`${baseUrl}/${item.id}`);
     } else {
-      // ID가 없는 경우 baseUrl로 이동
       router.push(baseUrl);
     }
   };
@@ -119,7 +127,7 @@ export default function BoardList({
                   cursor: 'pointer',
                   '&:hover': { bgcolor: 'action.hover' }
                 }}
-                onClick={() => handleItemClick(item.id)}
+                onClick={() => handleItemClick(item)}
               >
                 <ListItemIcon sx={{ minWidth: 40 }}>
                   {iconMap[item.icon || item.inquiry_type || 'forum']}

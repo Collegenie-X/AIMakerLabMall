@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import axios, { AxiosError } from 'axios';
 import {
   AppBar,
@@ -62,6 +62,7 @@ const menuItems = [
 /**
  * 헤더 컴포넌트
  * 상단 네비게이션과 로그인/로그아웃 기능을 제공
+ * 개선된 메뉴 닫기 기능 포함
  */
 export default function Header() {
   const [openMenuIndex, setOpenMenuIndex] = useState<number | null>(null);
@@ -75,6 +76,20 @@ export default function Header() {
   const [error, setError] = useState('');
   const [registerError, setRegisterError] = useState('');
   const { userName, setUserName } = useUser();
+
+  /**
+   * ESC 키로 메뉴 닫기 기능
+   */
+  useEffect(() => {
+    const handleEscKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && openMenuIndex !== null) {
+        handleClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscKey);
+    return () => document.removeEventListener('keydown', handleEscKey);
+  }, [openMenuIndex]);
 
   /**
    * 로그인 입력 필드 변경 핸들러
@@ -158,6 +173,7 @@ export default function Header() {
    * 로그인 다이얼로그 열기
    */
   const handleLoginClick = () => {
+    handleClose(); // 메뉴가 열려있다면 먼저 닫기
     setOpenLoginDialog(true);
   };
 
@@ -210,7 +226,8 @@ export default function Header() {
   };
 
   /**
-   * 메뉴 닫기 핸들러
+   * 메뉴 닫기 핸들러 - 개선된 버전
+   * 모든 메뉴 상태를 완전히 초기화
    */
   const handleClose = () => {
     setOpenMenuIndex(null);
@@ -219,7 +236,20 @@ export default function Header() {
 
   return (
     <>
-      <AppBar position="sticky" color="default" elevation={1} sx={{ position: 'relative', zIndex: 1000 }}>
+      <AppBar 
+        position="fixed" 
+        color="default" 
+        elevation={1} 
+        sx={{ 
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 1100,
+          backgroundColor: '#fff',
+          borderBottom: '1px solid #e0e0e0'
+        }}
+      >
         <Container maxWidth="lg">
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 2 }}>
             <Logo />
@@ -260,6 +290,9 @@ export default function Header() {
           </Box>
         </Container>
       </AppBar>
+
+      {/* 고정 헤더를 위한 스페이서 */}
+      <Box sx={{ height: '80px' }} />
 
       <LoginDialog
         open={openLoginDialog}

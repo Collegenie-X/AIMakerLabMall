@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import OutreachInquiry, InternalClass
+from .models import OutreachInquiry, InternalClass, Curriculum, ClassMaterial
 
 class OutreachInquirySerializer(serializers.ModelSerializer):
     """
@@ -26,11 +26,16 @@ class OutreachInquirySerializer(serializers.ModelSerializer):
         source='get_duration_display',
         read_only=True
     )
+    # 작성자 정보
+    author_name = serializers.SerializerMethodField()
+    is_owner = serializers.SerializerMethodField()
+    can_edit = serializers.SerializerMethodField()
     
     class Meta:
         model = OutreachInquiry
         fields = [
             'id',
+            'user',
             'title',
             'requester_name',
             'phone',
@@ -55,9 +60,36 @@ class OutreachInquirySerializer(serializers.ModelSerializer):
             'status',
             'created_at',
             'updated_at',
-            'admin_notes'
+            'admin_notes',
+            'author_name',
+            'is_owner',
+            'can_edit'
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'user', 'created_at', 'updated_at']
+        
+    def get_author_name(self, obj):
+        """작성자명 반환 (로그인 사용자면 username, 아니면 requester_name)"""
+        if obj.user:
+            return obj.user.username or obj.user.first_name or obj.requester_name
+        return obj.requester_name
+        
+    def get_is_owner(self, obj):
+        """현재 사용자가 작성자인지 확인"""
+        request = self.context.get('request')
+        if request and request.user:
+            return obj.is_owner(request.user)
+        return False
+        
+    def get_can_edit(self, obj):
+        """현재 사용자가 수정 가능한지 확인"""
+        request = self.context.get('request')
+        if request and request.user:
+            # 관리자는 항상 수정 가능
+            if request.user.is_staff or request.user.is_superuser:
+                return True
+            # 작성자만 수정 가능
+            return obj.is_owner(request.user)
+        return False
         
     def validate_student_count(self, value):
         """참여 인원 유효성 검사"""
@@ -124,6 +156,8 @@ class OutreachInquiryListSerializer(serializers.ModelSerializer):
         source='get_duration_display',
         read_only=True
     )
+    author_name = serializers.SerializerMethodField()
+    is_owner = serializers.SerializerMethodField()
     
     class Meta:
         model = OutreachInquiry
@@ -131,6 +165,7 @@ class OutreachInquiryListSerializer(serializers.ModelSerializer):
             'id',
             'title',
             'requester_name',
+            'author_name',
             'course_type',
             'course_type_display',
             'student_count',
@@ -139,8 +174,72 @@ class OutreachInquiryListSerializer(serializers.ModelSerializer):
             'duration_display',
             'budget',
             'status',
-            'created_at'
+            'created_at',
+            'is_owner'
         ]
+        
+    def get_author_name(self, obj):
+        """작성자명 반환"""
+        if obj.user:
+            return obj.user.username or obj.user.first_name or obj.requester_name
+        return obj.requester_name
+        
+    def get_is_owner(self, obj):
+        """현재 사용자가 작성자인지 확인"""
+        request = self.context.get('request')
+        if request and request.user:
+            return obj.is_owner(request.user)
+        return False
+
+
+# 커리큘럼 시리얼라이저
+class CurriculumSerializer(serializers.ModelSerializer):
+    """
+    커리큘럼 시리얼라이저
+    """
+    duration_display = serializers.CharField(
+        source='get_duration_display',
+        read_only=True
+    )
+    
+    class Meta:
+        model = Curriculum
+        fields = [
+            'id',
+            'session_number',
+            'session_title',
+            'duration_minutes',
+            'duration_display',
+            'description',
+            'learning_objectives',
+            'materials_needed'
+        ]
+
+
+# 교구재 시리얼라이저
+class ClassMaterialSerializer(serializers.ModelSerializer):
+    """
+    수업 교구재 시리얼라이저
+    """
+    total_price_for_10 = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = ClassMaterial
+        fields = [
+            'id',
+            'name',
+            'quantity',
+            'unit',
+            'is_required',
+            'description',
+            'price_estimate',
+            'total_price_for_10',
+            'supplier_info'
+        ]
+        
+    def get_total_price_for_10(self, obj):
+        """10명 기준 총 비용 계산"""
+        return obj.get_total_price_for_students(10)
 
 
 # InternalClass 시리얼라이저들
@@ -174,6 +273,10 @@ class InternalClassSerializer(serializers.ModelSerializer):
         read_only=True
     )
     
+    # 관련 모델들
+    curriculum_items = CurriculumSerializer(many=True, read_only=True)
+    materials = ClassMaterialSerializer(many=True, read_only=True)
+    
     class Meta:
         model = InternalClass
         fields = [
@@ -198,15 +301,16 @@ class InternalClassSerializer(serializers.ModelSerializer):
             'discounted_price',
             'enrollment_rate',
             'description',
-            'curriculum',
             'prerequisites',
-            'materials',
             'thumbnail',
+            'youtube_url',
             'images',
             'location',
             'travel_fee',
             'is_active',
             'is_enrollable',
+            'curriculum_items',
+            'materials',
             'created_at',
             'updated_at'
         ]
@@ -241,6 +345,10 @@ class InternalClassListSerializer(serializers.ModelSerializer):
         read_only=True
     )
     
+    # 간소화된 커리큘럼과 교구재 정보
+    curriculum_count = serializers.SerializerMethodField()
+    required_materials_count = serializers.SerializerMethodField()
+    
     class Meta:
         model = InternalClass
         fields = [
@@ -261,9 +369,20 @@ class InternalClassListSerializer(serializers.ModelSerializer):
             'discounted_price',
             'enrollment_rate',
             'thumbnail',
+            'youtube_url',
             'is_active',
-            'is_enrollable'
+            'is_enrollable',
+            'curriculum_count',
+            'required_materials_count'
         ]
+        
+    def get_curriculum_count(self, obj):
+        """커리큘럼 차시 수"""
+        return obj.curriculum_items.count()
+        
+    def get_required_materials_count(self, obj):
+        """필수 교구재 수"""
+        return obj.materials.filter(is_required=True).count()
 
 class ClassEnrollmentSerializer(serializers.ModelSerializer):
     """

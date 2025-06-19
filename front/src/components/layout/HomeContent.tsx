@@ -107,6 +107,14 @@ export default function HomeContent({ slides }: HomeContentProps) {
     router.push('/inquiry/contact');
   };
 
+  /**
+   * 코딩 출강 문의 아이템 클릭 핸들러
+   * - ID에 상관없이 항상 문의 작성 페이지로 이동
+   */
+  const handleOutreachItemClick = () => {
+    router.push('/inquiry/contact');
+  };
+
   return (
     <Box>
       <HeroBanner initialSlides={slides} />
@@ -131,6 +139,7 @@ export default function HomeContent({ slides }: HomeContentProps) {
           onAddClick={handleAddOutreachInquiry}
           itemsPerPage={5}
           baseUrl="/inquiry/contact"
+          onItemClick={handleOutreachItemClick}
         />
       </Container>
       <Statistics />
