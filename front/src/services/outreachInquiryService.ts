@@ -231,6 +231,60 @@ export const createOutreachInquiry = async (
 };
 
 /**
+ * 출강 문의를 수정하는 함수
+ * 
+ * @param id - 수정할 출강 문의 ID
+ * @param outreachInquiryData - 수정할 출강 문의 데이터 객체
+ * @returns 수정된 출강 문의 객체
+ */
+export interface UpdateOutreachInquiryData {
+  title?: string;
+  requester_name?: string;
+  phone?: string;
+  email?: string;
+  course_type?: string;
+  student_count?: number;
+  student_grade?: string;
+  preferred_date?: string;
+  preferred_time?: string;
+  duration?: string;
+  location?: string;
+  message?: string;
+  budget?: string;
+  special_requests?: string;
+}
+
+export const updateOutreachInquiry = async (
+  id: number,
+  outreachInquiryData: UpdateOutreachInquiryData
+): Promise<OutreachInquiry> => {
+  try {
+    // 헤더 설정
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json'
+    };
+    
+    // 토큰이 필수 (로그인한 사용자만 수정 가능)
+    const token = getToken();
+    if (!token) {
+      throw new Error('로그인이 필요합니다.');
+    }
+    headers['Authorization'] = `Bearer ${token}`;
+    
+    const response = await axios.patch(
+      `${API_URL}/outreach-inquiries/${id}/`, 
+      outreachInquiryData,
+      { headers }
+    );
+    
+    return response.data;
+  } catch (error) {
+    console.error('출강 문의 수정 중 오류 발생:', error);
+    throw error;
+  }
+};
+
+/**
  * 출강 문의 통계 정보를 가져오는 함수
  * 
  * @returns 출강 문의 통계 객체
