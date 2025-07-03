@@ -19,19 +19,37 @@ from .serializers import (
 class OutreachInquiryViewSet(viewsets.ModelViewSet):
     """
     코딩 출강 교육 문의 ViewSet
-    - 목록 조회: 모든 사용자 가능
-    - 상세 조회: 모든 사용자 가능  
+    - 목록 조회: 모든 사용자 가능 (로그인 불필요)
+    - 상세 조회: 로그인한 사용자만 가능 
     - 생성: 모든 사용자 가능 (로그인 시 작성자 자동 설정)
     - 수정/삭제: 작성자만 가능
     """
     queryset = OutreachInquiry.objects.all()
     serializer_class = OutreachInquirySerializer
-    permission_classes = [AllowAny]  # 임시로 모든 사용자 허용으로 변경
-    filter_backends = [filters.SearchFilter, filters.OrderingFilter]  # DjangoFilterBackend 제거
-    # filterset_fields = ['status', 'course_type', 'student_grade', 'duration']  # 주석 처리
+    permission_classes = [AllowAny]  # 기본적으로 모든 사용자 허용
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['title', 'requester_name', 'location']
     ordering_fields = ['created_at', 'preferred_date', 'student_count']
-    ordering = ['-created_at']  # 기본 정렬: 최신순
+    ordering = ['-created_at']
+    
+    def get_permissions(self):
+        """
+        액션에 따라 다른 권한 클래스 적용
+        - list, create: 모든 사용자 허용
+        - retrieve: 로그인한 사용자만 허용
+        - update, partial_update, destroy: 작성자만 허용
+        """
+        if self.action == 'retrieve':
+            # 상세 조회는 로그인 필요
+            permission_classes = [IsAuthenticated]
+        elif self.action in ['update', 'partial_update', 'destroy']:
+            # 수정/삭제는 작성자만 가능
+            permission_classes = [IsOwnerOrReadOnly]
+        else:
+            # 목록 조회, 생성은 모든 사용자 허용
+            permission_classes = [AllowAny]
+        
+        return [permission() for permission in permission_classes]
     
     def get_queryset(self):
         """쿼리 파라미터를 사용한 필터링"""
