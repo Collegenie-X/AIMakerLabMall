@@ -35,18 +35,19 @@ class OutreachInquiryViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         """
         액션에 따라 다른 권한 클래스 적용
-        - list, create: 모든 사용자 허용
+        - list: 모든 사용자 허용 (로그인 불필요)
+        - create: 로그인한 사용자만 허용 (새 요구사항)
         - retrieve: 로그인한 사용자만 허용
         - update, partial_update, destroy: 작성자만 허용
         """
-        if self.action == 'retrieve':
-            # 상세 조회는 로그인 필요
+        if self.action in ['retrieve', 'create']:
+            # 상세 조회와 생성은 로그인 필요
             permission_classes = [IsAuthenticated]
         elif self.action in ['update', 'partial_update', 'destroy']:
             # 수정/삭제는 작성자만 가능
             permission_classes = [IsOwnerOrReadOnly]
         else:
-            # 목록 조회, 생성은 모든 사용자 허용
+            # 목록 조회는 모든 사용자 허용
             permission_classes = [AllowAny]
         
         return [permission() for permission in permission_classes]

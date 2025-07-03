@@ -314,8 +314,18 @@ export default function OutreachInquiryPage() {
 
   /**
    * 문의 작성 폼 열기
+   * 로그인한 사용자만 새 문의 작성 가능
    */
   const handleOpenForm = () => {
+    // 로그인 상태 확인
+    const currentLoginStatus = checkLoginStatus();
+    setIsLoggedIn(currentLoginStatus);
+    
+    if (!currentLoginStatus) {
+      showLoginRequiredAlert();
+      return;
+    }
+    
     setOpenForm(true);
     setSubmitted(false);
   };
@@ -405,7 +415,7 @@ export default function OutreachInquiryPage() {
       
       // 3단계: 성공 상태 설정
       setSubmissionStatus('success');
-      setSuccessMessage(`🎉 "${formData.title}" 문의가 성공적으로 등록되었습니다!`);
+      setSuccessMessage('🎉 문의가 완료되었습니다! 빠른 시일 내에 연락드리겠습니다.');
       setSubmitted(true);
       
       // 4단계: 데이터 새로고침 (병렬 처리)
@@ -416,27 +426,18 @@ export default function OutreachInquiryPage() {
       ]);
       console.log('✅ 게시판 데이터 새로고침 완료');
       
-      // 5단계: 성공 메시지 표시 후 폼 닫기 (순차적 처리)
+      // 5단계: 3초 후 폼 자동 닫기
       setTimeout(() => {
         console.log('🔄 폼 닫기 및 상태 초기화');
         handleCloseForm();
         setSubmissionStatus('idle');
         setSuccessMessage('');
-      }, 3000); // 3초 후 닫기
+      }, 3000);
       
     } catch (error: any) {
       console.error('❌ 문의 생성 중 오류:', error);
       setSubmissionStatus('error');
-      
-      // 상세한 오류 메시지 생성
-      const errorMessage = error.response?.data?.detail || 
-                          error.response?.data?.message || 
-                          error.message || 
-                          '문의 생성 중 오류가 발생했습니다.';
-      
-      // 사용자 친화적 오류 알림
-      const userMessage = `❌ 문의 등록 실패\n\n${errorMessage}\n\n다시 시도해주세요.`;
-      alert(userMessage);
+      setSuccessMessage('문의 등록 중 오류가 발생했습니다. 다시 시도해주세요.');
       
       // 오류 상태 초기화
       setTimeout(() => {
@@ -1178,6 +1179,22 @@ export default function OutreachInquiryPage() {
                 <Typography variant="body2" sx={{ mt: 1, opacity: 0.8 }}>
                   게시판이 업데이트되었습니다. 잠시 후 창이 자동으로 닫힙니다.
                 </Typography>
+              </Alert>
+            )}
+
+            {/* 오류 메시지 */}
+            {submissionStatus === 'error' && successMessage && (
+              <Alert 
+                severity="error" 
+                sx={{ 
+                  mb: 3,
+                  '& .MuiAlert-message': {
+                    fontWeight: 600,
+                    fontSize: '1rem'
+                  }
+                }}
+              >
+                {successMessage}
               </Alert>
             )}
 
