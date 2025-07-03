@@ -373,6 +373,7 @@ export default function OutreachInquiryPage() {
   /**
    * 폼 제출 핸들러
    * API 201 응답 후 게시판 새로고침 및 성공 메시지 표시
+   * 함수형 모듈형 구조로 순차적 처리
    */
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -380,7 +381,7 @@ export default function OutreachInquiryPage() {
     try {
       setSubmissionStatus('submitting');
       
-      // API 데이터 형식에 맞게 변환
+      // 1단계: API 데이터 형식 변환
       const createData: CreateOutreachInquiryData = {
         title: formData.title,
         requester_name: formData.requester_name,
@@ -398,41 +399,49 @@ export default function OutreachInquiryPage() {
         special_requests: formData.special_requests || undefined
       };
 
-      // API 호출하여 새 문의 생성 (201 응답 대기)
+      // 2단계: 백엔드 API 호출 (201 응답 대기)
       const response = await createOutreachInquiry(createData);
-      console.log('문의 생성 성공:', response);
+      console.log('✅ 문의 생성 성공:', response);
       
+      // 3단계: 성공 상태 설정
       setSubmissionStatus('success');
-      setSuccessMessage(`"${formData.title}" 문의가 성공적으로 등록되었습니다!`);
+      setSuccessMessage(`🎉 "${formData.title}" 문의가 성공적으로 등록되었습니다!`);
       setSubmitted(true);
       
-      // 게시판 데이터 새로고침
+      // 4단계: 데이터 새로고침 (병렬 처리)
+      console.log('📊 게시판 데이터 새로고침 중...');
       await Promise.all([
         loadInquiriesData(),
         loadStatsData()
       ]);
+      console.log('✅ 게시판 데이터 새로고침 완료');
       
-      // 성공 메시지 표시 후 폼 닫기
+      // 5단계: 성공 메시지 표시 후 폼 닫기 (순차적 처리)
       setTimeout(() => {
+        console.log('🔄 폼 닫기 및 상태 초기화');
         handleCloseForm();
         setSubmissionStatus('idle');
         setSuccessMessage('');
-      }, 2500);
+      }, 3000); // 3초 후 닫기
       
     } catch (error: any) {
-      console.error('문의 생성 중 오류:', error);
+      console.error('❌ 문의 생성 중 오류:', error);
       setSubmissionStatus('error');
       
-      const errorMessage = error.response?.data?.message || 
+      // 상세한 오류 메시지 생성
+      const errorMessage = error.response?.data?.detail || 
+                          error.response?.data?.message || 
                           error.message || 
                           '문의 생성 중 오류가 발생했습니다.';
       
-      alert(`❌ 오류 발생: ${errorMessage}\n다시 시도해주세요.`);
+      // 사용자 친화적 오류 알림
+      const userMessage = `❌ 문의 등록 실패\n\n${errorMessage}\n\n다시 시도해주세요.`;
+      alert(userMessage);
       
       // 오류 상태 초기화
       setTimeout(() => {
         setSubmissionStatus('idle');
-      }, 1000);
+      }, 1500);
     }
   };
 
@@ -1128,13 +1137,30 @@ export default function OutreachInquiryPage() {
         <DialogTitle sx={{ 
           background: 'linear-gradient(45deg, #1976d2, #42a5f5)', 
           color: 'white',
-          fontWeight: 'bold'
+          fontWeight: 'bold',
+          position: 'relative',
+          pr: 6
         }}>
           ✏️ 새로운 출강 교육 문의
+          <IconButton
+            aria-label="close"
+            onClick={handleCloseForm}
+            sx={{
+              position: 'absolute',
+              right: 8,
+              top: 8,
+              color: 'white',
+              '&:hover': {
+                backgroundColor: 'rgba(255, 255, 255, 0.1)'
+              }
+            }}
+          >
+            <Close />
+          </IconButton>
         </DialogTitle>
         
         <form onSubmit={handleSubmit}>
-          <DialogContent sx={{ minWidth: 800 }}>
+          <DialogContent sx={{ minWidth: 800, p: 4 }}>
             {/* 성공 메시지 */}
             {submissionStatus === 'success' && successMessage && (
               <Alert 
@@ -1165,234 +1191,284 @@ export default function OutreachInquiryPage() {
               </Box>
             )}
 
-            <Box
-              sx={{
-                display: 'grid',
-                gap: 3,
-                gridTemplateColumns: '1fr',
-                '@media (min-width: 600px)': {
-                  gridTemplateColumns: 'repeat(12, 1fr)',
-                }
-              }}
-            >
-              {/* 교육 제목 - 전체 너비 */}
-              <Box sx={{ gridColumn: { xs: '1', sm: '1 / -1' } }}>
-                <TextField
-                  fullWidth
-                  label="교육 제목"
-                  required
-                  value={formData.title}
-                  onChange={handleInputChange('title')}
-                  placeholder="예: 초등학교 3학년 대상 앱 인벤터 교육"
-                />
-              </Box>
-              
-              {/* 요청자명, 연락처, 이메일 - 3컬럼 */}
-              <Box sx={{ gridColumn: { xs: '1', sm: '1 / 5' } }}>
-                <TextField
-                  fullWidth
-                  label="요청자명"
-                  required
-                  value={formData.requester_name}
-                  onChange={handleInputChange('requester_name')}
-                />
-              </Box>
-              
-              <Box sx={{ gridColumn: { xs: '1', sm: '5 / 9' } }}>
-                <TextField
-                  fullWidth
-                  label="연락처"
-                  required
-                  value={formData.phone}
-                  onChange={handleInputChange('phone')}
-                  placeholder="010-1234-5678"
-                />
-              </Box>
-              
-              <Box sx={{ gridColumn: { xs: '1', sm: '9 / -1' } }}>
-                <TextField
-                  fullWidth
-                  label="이메일"
-                  type="email"
-                  required
-                  value={formData.email}
-                  onChange={handleInputChange('email')}
-                />
-              </Box>
-              
-              {/* 교육 장소, 예산 - 2컬럼 */}
-              <Box sx={{ gridColumn: { xs: '1', sm: '1 / 7' } }}>
-                <TextField
-                  fullWidth
-                  label="교육 장소"
-                  required
-                  value={formData.location}
-                  onChange={handleInputChange('location')}
-                  placeholder="예: 서울시 강남구 OO초등학교"
-                />
-              </Box>
-              
-              <Box sx={{ gridColumn: { xs: '1', sm: '7 / -1' } }}>
-                <Box>
+            {/* 1. 기본 정보 그룹 */}
+            <Card sx={{ mb: 3, border: '1px solid #e0e0e0' }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom sx={{ 
+                  color: '#1976d2', 
+                  fontWeight: 'bold',
+                  display: 'flex',
+                  alignItems: 'center',
+                  mb: 3
+                }}>
+                  📝 기본 정보
+                </Typography>
+                
+                <Box sx={{ display: 'grid', gap: 2 }}>
+                  {/* 교육 제목 */}
                   <TextField
                     fullWidth
-                    label="예산 (선택사항)"
-                    type="number"
-                    value={formData.budget}
-                    onChange={handleInputChange('budget')}
-                    placeholder="3000000"
-                    inputProps={{ 
-                      min: 0, 
-                      step: 100000 
-                    }}
-                    InputProps={{
-                      endAdornment: <Typography variant="body2" sx={{ color: 'text.secondary', ml: 1 }}>원</Typography>
-                    }}
+                    label="교육 제목"
+                    required
+                    value={formData.title}
+                    onChange={handleInputChange('title')}
+                    placeholder="예: 초등학교 3학년 대상 앱 인벤터 교육"
                   />
-                  {formData.budget && (
-                    <Box sx={{ mt: 0.5, display: 'flex', justifyContent: 'space-between' }}>
-                      <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                        💰 {formatNumberWithCommas(formData.budget)}원
-                      </Typography>
-                      <Typography variant="caption" sx={{ color: 'primary.main', fontWeight: 'bold' }}>
-                        {convertToKoreanCurrency(parseInt(formData.budget) || 0)}
-                      </Typography>
-                    </Box>
-                  )}
+                  
+                  {/* 교육 요청사항 */}
+                  <TextField
+                    fullWidth
+                    label="교육 요청사항"
+                    multiline
+                    rows={5}
+                    required
+                    value={formData.message}
+                    onChange={handleInputChange('message')}
+                    placeholder="교육 목적, 학생 수준, 특별한 요구사항 등을 자세히 적어주세요."
+                  />
+                  
+                  {/* 기타 요청사항 */}
+                  <TextField
+                    fullWidth
+                    label="기타 요청사항 (선택사항)"
+                    multiline
+                    rows={3}
+                    value={formData.special_requests}
+                    onChange={handleInputChange('special_requests')}
+                    placeholder="장비 준비, 추가 교구, 특별한 요구사항 등"
+                  />
                 </Box>
-              </Box>
-              
-              {/* 교육 요청사항 - 전체 너비, 높이 증가 */}
-              <Box sx={{ gridColumn: { xs: '1', sm: '1 / -1' } }}>
-                <TextField
-                  fullWidth
-                  label="교육 요청사항"
-                  multiline
-                  rows={8}
-                  required
-                  value={formData.message}
-                  onChange={handleInputChange('message')}
-                  placeholder="교육 목적, 학생 수준, 특별한 요구사항 등을 자세히 적어주세요."
-                />
-              </Box>
-              
-              {/* 희망 과목, 학년, 참여 인원 - 3컬럼 드롭다운 */}
-              <Box sx={{ gridColumn: { xs: '1', sm: '1 / 5' } }}>
-                <FormControl fullWidth required>
-                  <InputLabel>희망 과목</InputLabel>
-                  <Select
-                    value={formData.course_type}
-                    onChange={handleSelectChange('course_type')}
-                    label="희망 과목"
-                  >
-                    <MenuItem value="app-inventor">앱 인벤터</MenuItem>
-                    <MenuItem value="arduino">아두이노</MenuItem>
-                    <MenuItem value="raspberry-pi">Raspberry Pi</MenuItem>
-                    <MenuItem value="ai">AI 코딩</MenuItem>
-                    <MenuItem value="python">파이썬 코딩</MenuItem>
-                    <MenuItem value="scratch">스크래치</MenuItem>
-                    <MenuItem value="web-development">웹 개발</MenuItem>
-                    <MenuItem value="game-development">게임 개발</MenuItem>
-                  </Select>
-                </FormControl>
-              </Box>
-              
-              <Box sx={{ gridColumn: { xs: '1', sm: '5 / 9' } }}>
-                <FormControl fullWidth required>
-                  <InputLabel>학년</InputLabel>
-                  <Select
-                    value={formData.student_grade}
-                    onChange={handleSelectChange('student_grade')}
-                    label="학년"
-                  >
-                    <MenuItem value="초등 1-2학년">초등 1-2학년</MenuItem>
-                    <MenuItem value="초등 3-4학년">초등 3-4학년</MenuItem>
-                    <MenuItem value="초등 5-6학년">초등 5-6학년</MenuItem>
-                    <MenuItem value="중학생">중학생</MenuItem>
-                    <MenuItem value="고등학생">고등학생</MenuItem>
-                    <MenuItem value="성인">성인</MenuItem>
-                    <MenuItem value="전체">전체</MenuItem>
-                  </Select>
-                </FormControl>
-              </Box>
-              
-              <Box sx={{ gridColumn: { xs: '1', sm: '9 / -1' } }}>
-                <TextField
-                  fullWidth
-                  label="참여 인원"
-                  type="number"
-                  required
-                  value={formData.student_count}
-                  onChange={handleInputChange('student_count')}
-                  inputProps={{ min: 1, max: 100 }}
-                />
-              </Box>
-              
-              {/* 희망 날짜, 희망 시간, 교육 시간 - 3컬럼 */}
-              <Box sx={{ gridColumn: { xs: '1', sm: '1 / 5' } }}>
-                <TextField
-                  fullWidth
-                  label="희망 날짜"
-                  type="date"
-                  required
-                  value={formData.preferred_date}
-                  onChange={handleInputChange('preferred_date')}
-                  InputLabelProps={{ shrink: true }}
-                />
-              </Box>
-              
-              <Box sx={{ gridColumn: { xs: '1', sm: '5 / 9' } }}>
-                <TextField
-                  fullWidth
-                  label="희망 시간"
-                  type="time"
-                  required
-                  value={formData.preferred_time}
-                  onChange={handleInputChange('preferred_time')}
-                  InputLabelProps={{ shrink: true }}
-                />
-              </Box>
-              
-              <Box sx={{ gridColumn: { xs: '1', sm: '9 / -1' } }}>
-                <FormControl fullWidth required>
-                  <InputLabel>교육 시간</InputLabel>
-                  <Select
-                    value={formData.duration}
-                    onChange={handleSelectChange('duration')}
-                    label="교육 시간"
-                  >
-                    <MenuItem value="1시간">1시간</MenuItem>
-                    <MenuItem value="2시간">2시간</MenuItem>
-                    <MenuItem value="3시간">3시간</MenuItem>
-                    <MenuItem value="4시간">4시간</MenuItem>
-                    <MenuItem value="6시간">6시간</MenuItem>
-                    <MenuItem value="8시간">8시간</MenuItem>
-                    <MenuItem value="기타">기타</MenuItem>
-                  </Select>
-                </FormControl>
-              </Box>
-              
-              {/* 기타 요청사항 - 전체 너비, 높이 증가 */}
-              <Box sx={{ gridColumn: { xs: '1', sm: '1 / -1' } }}>
-                <TextField
-                  fullWidth
-                  label="기타 요청사항 (선택사항)"
-                  multiline
-                  rows={4}
-                  value={formData.special_requests}
-                  onChange={handleInputChange('special_requests')}
-                  placeholder="장비 준비, 추가 교구, 특별한 요구사항 등"
-                />
-              </Box>
-            </Box>
+              </CardContent>
+            </Card>
+
+            {/* 2. 연락처 정보 그룹 */}
+            <Card sx={{ mb: 3, border: '1px solid #e0e0e0' }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom sx={{ 
+                  color: '#1976d2', 
+                  fontWeight: 'bold',
+                  display: 'flex',
+                  alignItems: 'center',
+                  mb: 3
+                }}>
+                  👤 연락처 정보
+                </Typography>
+                
+                <Box sx={{ 
+                  display: 'grid', 
+                  gap: 2,
+                  gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr 1fr' }
+                }}>
+                  <TextField
+                    fullWidth
+                    label="요청자명"
+                    required
+                    value={formData.requester_name}
+                    onChange={handleInputChange('requester_name')}
+                  />
+                  
+                  <TextField
+                    fullWidth
+                    label="연락처"
+                    required
+                    value={formData.phone}
+                    onChange={handleInputChange('phone')}
+                    placeholder="010-1234-5678"
+                  />
+                  
+                  <TextField
+                    fullWidth
+                    label="이메일"
+                    type="email"
+                    required
+                    value={formData.email}
+                    onChange={handleInputChange('email')}
+                  />
+                </Box>
+              </CardContent>
+            </Card>
+
+            {/* 3. 교육 설정 그룹 */}
+            <Card sx={{ mb: 3, border: '1px solid #e0e0e0' }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom sx={{ 
+                  color: '#1976d2', 
+                  fontWeight: 'bold',
+                  display: 'flex',
+                  alignItems: 'center',
+                  mb: 3
+                }}>
+                  🎓 교육 설정
+                </Typography>
+                
+                <Box sx={{ display: 'grid', gap: 2 }}>
+                  {/* 첫 번째 행: 희망 과목, 학년, 참여 인원 */}
+                  <Box sx={{ 
+                    display: 'grid', 
+                    gap: 2,
+                    gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr 1fr' }
+                  }}>
+                    <FormControl fullWidth required>
+                      <InputLabel>희망 과목</InputLabel>
+                      <Select
+                        value={formData.course_type}
+                        onChange={handleSelectChange('course_type')}
+                        label="희망 과목"
+                      >
+                        <MenuItem value="app-inventor">앱 인벤터</MenuItem>
+                        <MenuItem value="arduino">아두이노</MenuItem>
+                        <MenuItem value="raspberry-pi">Raspberry Pi</MenuItem>
+                        <MenuItem value="ai">AI 코딩</MenuItem>
+                        <MenuItem value="python">파이썬 코딩</MenuItem>
+                        <MenuItem value="scratch">스크래치</MenuItem>
+                        <MenuItem value="web-development">웹 개발</MenuItem>
+                        <MenuItem value="game-development">게임 개발</MenuItem>
+                      </Select>
+                    </FormControl>
+                    
+                    <FormControl fullWidth required>
+                      <InputLabel>학년</InputLabel>
+                      <Select
+                        value={formData.student_grade}
+                        onChange={handleSelectChange('student_grade')}
+                        label="학년"
+                      >
+                        <MenuItem value="초등 1-2학년">초등 1-2학년</MenuItem>
+                        <MenuItem value="초등 3-4학년">초등 3-4학년</MenuItem>
+                        <MenuItem value="초등 5-6학년">초등 5-6학년</MenuItem>
+                        <MenuItem value="중학생">중학생</MenuItem>
+                        <MenuItem value="고등학생">고등학생</MenuItem>
+                        <MenuItem value="성인">성인</MenuItem>
+                        <MenuItem value="전체">전체</MenuItem>
+                      </Select>
+                    </FormControl>
+                    
+                    <TextField
+                      fullWidth
+                      label="참여 인원"
+                      type="number"
+                      required
+                      value={formData.student_count}
+                      onChange={handleInputChange('student_count')}
+                      inputProps={{ min: 1, max: 100 }}
+                      InputProps={{
+                        endAdornment: <Typography variant="body2" sx={{ color: 'text.secondary', ml: 1 }}>명</Typography>
+                      }}
+                    />
+                  </Box>
+                  
+                  {/* 두 번째 행: 교육 장소, 예산 */}
+                  <Box sx={{ 
+                    display: 'grid', 
+                    gap: 2,
+                    gridTemplateColumns: { xs: '1fr', sm: '2fr 1fr' }
+                  }}>
+                    <TextField
+                      fullWidth
+                      label="교육 장소"
+                      required
+                      value={formData.location}
+                      onChange={handleInputChange('location')}
+                      placeholder="예: 서울시 강남구 OO초등학교"
+                    />
+                    
+                    <Box>
+                      <TextField
+                        fullWidth
+                        label="예산 (선택사항)"
+                        type="number"
+                        value={formData.budget}
+                        onChange={handleInputChange('budget')}
+                        placeholder="3000000"
+                        inputProps={{ 
+                          min: 0, 
+                          step: 100000 
+                        }}
+                        InputProps={{
+                          endAdornment: <Typography variant="body2" sx={{ color: 'text.secondary', ml: 1 }}>원</Typography>
+                        }}
+                      />
+                      {formData.budget && (
+                        <Box sx={{ mt: 0.5, display: 'flex', justifyContent: 'space-between' }}>
+                          <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                            💰 {formatNumberWithCommas(formData.budget)}원
+                          </Typography>
+                          <Typography variant="caption" sx={{ color: 'primary.main', fontWeight: 'bold' }}>
+                            {convertToKoreanCurrency(parseInt(formData.budget) || 0)}
+                          </Typography>
+                        </Box>
+                      )}
+                    </Box>
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
+
+            {/* 4. 일정 설정 그룹 */}
+            <Card sx={{ mb: 3, border: '1px solid #e0e0e0' }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom sx={{ 
+                  color: '#1976d2', 
+                  fontWeight: 'bold',
+                  display: 'flex',
+                  alignItems: 'center',
+                  mb: 3
+                }}>
+                  📅 일정 설정
+                </Typography>
+                
+                <Box sx={{ 
+                  display: 'grid', 
+                  gap: 2,
+                  gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr 1fr' }
+                }}>
+                  <TextField
+                    fullWidth
+                    label="희망 날짜"
+                    type="date"
+                    required
+                    value={formData.preferred_date}
+                    onChange={handleInputChange('preferred_date')}
+                    InputLabelProps={{ shrink: true }}
+                  />
+                  
+                  <TextField
+                    fullWidth
+                    label="희망 시간"
+                    type="time"
+                    required
+                    value={formData.preferred_time}
+                    onChange={handleInputChange('preferred_time')}
+                    InputLabelProps={{ shrink: true }}
+                  />
+                  
+                  <FormControl fullWidth required>
+                    <InputLabel>교육 시간</InputLabel>
+                    <Select
+                      value={formData.duration}
+                      onChange={handleSelectChange('duration')}
+                      label="교육 시간"
+                    >
+                      <MenuItem value="1시간">1시간</MenuItem>
+                      <MenuItem value="2시간">2시간</MenuItem>
+                      <MenuItem value="3시간">3시간</MenuItem>
+                      <MenuItem value="4시간">4시간</MenuItem>
+                      <MenuItem value="6시간">6시간</MenuItem>
+                      <MenuItem value="8시간">8시간</MenuItem>
+                      <MenuItem value="기타">기타</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Box>
+              </CardContent>
+            </Card>
           </DialogContent>
           
-          <DialogActions sx={{ px: 3, pb: 3 }}>
+          <DialogActions sx={{ px: 4, pb: 3, gap: 2 }}>
             <Button 
               onClick={handleCloseForm} 
               color="secondary"
               disabled={submissionStatus === 'submitting'}
-              sx={{ minWidth: 100 }}
+              sx={{ minWidth: 120 }}
             >
               취소
             </Button>
@@ -1402,8 +1478,9 @@ export default function OutreachInquiryPage() {
               color="primary"
               disabled={submissionStatus === 'submitting' || submissionStatus === 'success'}
               sx={{ 
-                minWidth: 120,
-                position: 'relative'
+                minWidth: 140,
+                position: 'relative',
+                background: 'linear-gradient(45deg, #1976d2, #42a5f5)'
               }}
             >
               {submissionStatus === 'submitting' && (
@@ -1427,7 +1504,7 @@ export default function OutreachInquiryPage() {
               }}>
                 {submissionStatus === 'success' ? '등록 완료!' : 
                  submissionStatus === 'submitting' ? '등록 중...' : 
-                 '문의 등록'}
+                 '문의 등록하기'}
               </span>
             </Button>
           </DialogActions>
@@ -1444,13 +1521,30 @@ export default function OutreachInquiryPage() {
         <DialogTitle sx={{ 
           background: 'linear-gradient(45deg, #f57c00, #ff9800)', 
           color: 'white',
-          fontWeight: 'bold'
+          fontWeight: 'bold',
+          position: 'relative',
+          pr: 6
         }}>
           ✏️ 출강 교육 문의 수정
+          <IconButton
+            aria-label="close"
+            onClick={handleCloseEditForm}
+            sx={{
+              position: 'absolute',
+              right: 8,
+              top: 8,
+              color: 'white',
+              '&:hover': {
+                backgroundColor: 'rgba(255, 255, 255, 0.1)'
+              }
+            }}
+          >
+            <Close />
+          </IconButton>
         </DialogTitle>
         
         <form onSubmit={handleEditSubmit}>
-          <DialogContent sx={{ minWidth: 800 }}>
+          <DialogContent sx={{ minWidth: 800, p: 4 }}>
             {/* 성공 메시지 */}
             {submissionStatus === 'success' && successMessage && (
               <Alert 
@@ -1481,246 +1575,296 @@ export default function OutreachInquiryPage() {
               </Box>
             )}
 
-            <Box
-              sx={{
-                display: 'grid',
-                gap: 3,
-                gridTemplateColumns: '1fr',
-                '@media (min-width: 600px)': {
-                  gridTemplateColumns: 'repeat(12, 1fr)',
-                }
-              }}
-            >
-              {/* 교육 제목 - 전체 너비 */}
-              <Box sx={{ gridColumn: { xs: '1', sm: '1 / -1' } }}>
-                <TextField
-                  fullWidth
-                  label="교육 제목"
-                  required
-                  value={editFormData.title}
-                  onChange={handleEditInputChange('title')}
-                  placeholder="예: 초등학교 3학년 대상 앱 인벤터 교육"
-                />
-              </Box>
-              
-              {/* 요청자명, 연락처, 이메일 - 3컬럼 */}
-              <Box sx={{ gridColumn: { xs: '1', sm: '1 / 5' } }}>
-                <TextField
-                  fullWidth
-                  label="요청자명"
-                  required
-                  value={editFormData.requester_name}
-                  onChange={handleEditInputChange('requester_name')}
-                />
-              </Box>
-              
-              <Box sx={{ gridColumn: { xs: '1', sm: '5 / 9' } }}>
-                <TextField
-                  fullWidth
-                  label="연락처"
-                  required
-                  value={editFormData.phone}
-                  onChange={handleEditInputChange('phone')}
-                  placeholder="010-1234-5678"
-                />
-              </Box>
-              
-              <Box sx={{ gridColumn: { xs: '1', sm: '9 / -1' } }}>
-                <TextField
-                  fullWidth
-                  label="이메일"
-                  type="email"
-                  required
-                  value={editFormData.email}
-                  onChange={handleEditInputChange('email')}
-                />
-              </Box>
-              
-              {/* 교육 장소, 예산 - 2컬럼 */}
-              <Box sx={{ gridColumn: { xs: '1', sm: '1 / 7' } }}>
-                <TextField
-                  fullWidth
-                  label="교육 장소"
-                  required
-                  value={editFormData.location}
-                  onChange={handleEditInputChange('location')}
-                  placeholder="예: 서울시 강남구 OO초등학교"
-                />
-              </Box>
-              
-              <Box sx={{ gridColumn: { xs: '1', sm: '7 / -1' } }}>
-                <Box>
+            {/* 1. 기본 정보 그룹 */}
+            <Card sx={{ mb: 3, border: '1px solid #e0e0e0' }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom sx={{ 
+                  color: '#f57c00', 
+                  fontWeight: 'bold',
+                  display: 'flex',
+                  alignItems: 'center',
+                  mb: 3
+                }}>
+                  📝 기본 정보
+                </Typography>
+                
+                <Box sx={{ display: 'grid', gap: 2 }}>
+                  {/* 교육 제목 */}
                   <TextField
                     fullWidth
-                    label="예산 (선택사항)"
-                    type="number"
-                    value={editFormData.budget}
-                    onChange={handleEditInputChange('budget')}
-                    placeholder="3000000"
-                    inputProps={{ 
-                      min: 0, 
-                      step: 100000 
-                    }}
-                    InputProps={{
-                      endAdornment: <Typography variant="body2" sx={{ color: 'text.secondary', ml: 1 }}>원</Typography>
-                    }}
+                    label="교육 제목"
+                    required
+                    value={editFormData.title}
+                    onChange={handleEditInputChange('title')}
+                    placeholder="예: 초등학교 3학년 대상 앱 인벤터 교육"
                   />
-                  {editFormData.budget && (
-                    <Box sx={{ mt: 0.5, display: 'flex', justifyContent: 'space-between' }}>
-                      <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                        💰 {formatNumberWithCommas(editFormData.budget)}원
-                      </Typography>
-                      <Typography variant="caption" sx={{ color: 'primary.main', fontWeight: 'bold' }}>
-                        {convertToKoreanCurrency(parseInt(editFormData.budget) || 0)}
-                      </Typography>
-                    </Box>
-                  )}
+                  
+                  {/* 교육 요청사항 */}
+                  <TextField
+                    fullWidth
+                    label="교육 요청사항"
+                    multiline
+                    rows={5}
+                    required
+                    value={editFormData.message}
+                    onChange={handleEditInputChange('message')}
+                    placeholder="교육 목적, 학생 수준, 특별한 요구사항 등을 자세히 적어주세요."
+                  />
+                  
+                  {/* 기타 요청사항 */}
+                  <TextField
+                    fullWidth
+                    label="기타 요청사항 (선택사항)"
+                    multiline
+                    rows={3}
+                    value={editFormData.special_requests}
+                    onChange={handleEditInputChange('special_requests')}
+                    placeholder="장비 준비, 추가 교구, 특별한 요구사항 등"
+                  />
                 </Box>
-              </Box>
-              
-              {/* 교육 요청사항 - 전체 너비, 높이 증가 */}
-              <Box sx={{ gridColumn: { xs: '1', sm: '1 / -1' } }}>
-                <TextField
-                  fullWidth
-                  label="교육 요청사항"
-                  multiline
-                  rows={8}
-                  required
-                  value={editFormData.message}
-                  onChange={handleEditInputChange('message')}
-                  placeholder="교육 목적, 학생 수준, 특별한 요구사항 등을 자세히 적어주세요."
-                />
-              </Box>
-              
-              {/* 희망 과목, 학년, 참여 인원 - 3컬럼 드롭다운 */}
-              <Box sx={{ gridColumn: { xs: '1', sm: '1 / 5' } }}>
-                <FormControl fullWidth required>
-                  <InputLabel>희망 과목</InputLabel>
-                  <Select
-                    value={editFormData.course_type}
-                    onChange={handleEditSelectChange('course_type')}
-                    label="희망 과목"
-                  >
-                    <MenuItem value="app-inventor">앱 인벤터</MenuItem>
-                    <MenuItem value="arduino">아두이노</MenuItem>
-                    <MenuItem value="raspberry-pi">Raspberry Pi</MenuItem>
-                    <MenuItem value="ai">AI 코딩</MenuItem>
-                    <MenuItem value="python">파이썬 코딩</MenuItem>
-                    <MenuItem value="scratch">스크래치</MenuItem>
-                    <MenuItem value="web-development">웹 개발</MenuItem>
-                    <MenuItem value="game-development">게임 개발</MenuItem>
-                  </Select>
-                </FormControl>
-              </Box>
-              
-              <Box sx={{ gridColumn: { xs: '1', sm: '5 / 9' } }}>
-                <FormControl fullWidth required>
-                  <InputLabel>학년</InputLabel>
-                  <Select
-                    value={editFormData.student_grade}
-                    onChange={handleEditSelectChange('student_grade')}
-                    label="학년"
-                  >
-                    <MenuItem value="초등 1-2학년">초등 1-2학년</MenuItem>
-                    <MenuItem value="초등 3-4학년">초등 3-4학년</MenuItem>
-                    <MenuItem value="초등 5-6학년">초등 5-6학년</MenuItem>
-                    <MenuItem value="중학생">중학생</MenuItem>
-                    <MenuItem value="고등학생">고등학생</MenuItem>
-                    <MenuItem value="성인">성인</MenuItem>
-                    <MenuItem value="전체">전체</MenuItem>
-                  </Select>
-                </FormControl>
-              </Box>
-              
-              <Box sx={{ gridColumn: { xs: '1', sm: '9 / -1' } }}>
-                <TextField
-                  fullWidth
-                  label="참여 인원"
-                  type="number"
-                  required
-                  value={editFormData.student_count}
-                  onChange={handleEditInputChange('student_count')}
-                  inputProps={{ min: 1, max: 100 }}
-                />
-              </Box>
-              
-              {/* 희망 날짜, 희망 시간, 교육 시간 - 3컬럼 */}
-              <Box sx={{ gridColumn: { xs: '1', sm: '1 / 5' } }}>
-                <TextField
-                  fullWidth
-                  label="희망 날짜"
-                  type="date"
-                  required
-                  value={editFormData.preferred_date}
-                  onChange={handleEditInputChange('preferred_date')}
-                  InputLabelProps={{ shrink: true }}
-                />
-              </Box>
-              
-              <Box sx={{ gridColumn: { xs: '1', sm: '5 / 9' } }}>
-                <TextField
-                  fullWidth
-                  label="희망 시간"
-                  type="time"
-                  required
-                  value={editFormData.preferred_time}
-                  onChange={handleEditInputChange('preferred_time')}
-                  InputLabelProps={{ shrink: true }}
-                />
-              </Box>
-              
-              <Box sx={{ gridColumn: { xs: '1', sm: '9 / -1' } }}>
-                <FormControl fullWidth required>
-                  <InputLabel>교육 시간</InputLabel>
-                  <Select
-                    value={editFormData.duration}
-                    onChange={handleEditSelectChange('duration')}
-                    label="교육 시간"
-                  >
-                    <MenuItem value="1시간">1시간</MenuItem>
-                    <MenuItem value="2시간">2시간</MenuItem>
-                    <MenuItem value="3시간">3시간</MenuItem>
-                    <MenuItem value="4시간">4시간</MenuItem>
-                    <MenuItem value="6시간">6시간</MenuItem>
-                    <MenuItem value="8시간">8시간</MenuItem>
-                    <MenuItem value="기타">기타</MenuItem>
-                  </Select>
-                </FormControl>
-              </Box>
-              
-              {/* 기타 요청사항 - 전체 너비, 높이 증가 */}
-              <Box sx={{ gridColumn: { xs: '1', sm: '1 / -1' } }}>
-                <TextField
-                  fullWidth
-                  label="기타 요청사항 (선택사항)"
-                  multiline
-                  rows={4}
-                  value={editFormData.special_requests}
-                  onChange={handleEditInputChange('special_requests')}
-                  placeholder="장비 준비, 추가 교구, 특별한 요구사항 등"
-                />
-              </Box>
-            </Box>
+              </CardContent>
+            </Card>
+
+            {/* 2. 연락처 정보 그룹 */}
+            <Card sx={{ mb: 3, border: '1px solid #e0e0e0' }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom sx={{ 
+                  color: '#f57c00', 
+                  fontWeight: 'bold',
+                  display: 'flex',
+                  alignItems: 'center',
+                  mb: 3
+                }}>
+                  👤 연락처 정보
+                </Typography>
+                
+                <Box sx={{ 
+                  display: 'grid', 
+                  gap: 2,
+                  gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr 1fr' }
+                }}>
+                  <TextField
+                    fullWidth
+                    label="요청자명"
+                    required
+                    value={editFormData.requester_name}
+                    onChange={handleEditInputChange('requester_name')}
+                  />
+                  
+                  <TextField
+                    fullWidth
+                    label="연락처"
+                    required
+                    value={editFormData.phone}
+                    onChange={handleEditInputChange('phone')}
+                    placeholder="010-1234-5678"
+                  />
+                  
+                  <TextField
+                    fullWidth
+                    label="이메일"
+                    type="email"
+                    required
+                    value={editFormData.email}
+                    onChange={handleEditInputChange('email')}
+                  />
+                </Box>
+              </CardContent>
+            </Card>
+
+            {/* 3. 교육 설정 그룹 */}
+            <Card sx={{ mb: 3, border: '1px solid #e0e0e0' }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom sx={{ 
+                  color: '#f57c00', 
+                  fontWeight: 'bold',
+                  display: 'flex',
+                  alignItems: 'center',
+                  mb: 3
+                }}>
+                  🎓 교육 설정
+                </Typography>
+                
+                <Box sx={{ display: 'grid', gap: 2 }}>
+                  {/* 첫 번째 행: 희망 과목, 학년, 참여 인원 */}
+                  <Box sx={{ 
+                    display: 'grid', 
+                    gap: 2,
+                    gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr 1fr' }
+                  }}>
+                    <FormControl fullWidth required>
+                      <InputLabel>희망 과목</InputLabel>
+                      <Select
+                        value={editFormData.course_type}
+                        onChange={handleEditSelectChange('course_type')}
+                        label="희망 과목"
+                      >
+                        <MenuItem value="app-inventor">앱 인벤터</MenuItem>
+                        <MenuItem value="arduino">아두이노</MenuItem>
+                        <MenuItem value="raspberry-pi">Raspberry Pi</MenuItem>
+                        <MenuItem value="ai">AI 코딩</MenuItem>
+                        <MenuItem value="python">파이썬 코딩</MenuItem>
+                        <MenuItem value="scratch">스크래치</MenuItem>
+                        <MenuItem value="web-development">웹 개발</MenuItem>
+                        <MenuItem value="game-development">게임 개발</MenuItem>
+                      </Select>
+                    </FormControl>
+                    
+                    <FormControl fullWidth required>
+                      <InputLabel>학년</InputLabel>
+                      <Select
+                        value={editFormData.student_grade}
+                        onChange={handleEditSelectChange('student_grade')}
+                        label="학년"
+                      >
+                        <MenuItem value="초등 1-2학년">초등 1-2학년</MenuItem>
+                        <MenuItem value="초등 3-4학년">초등 3-4학년</MenuItem>
+                        <MenuItem value="초등 5-6학년">초등 5-6학년</MenuItem>
+                        <MenuItem value="중학생">중학생</MenuItem>
+                        <MenuItem value="고등학생">고등학생</MenuItem>
+                        <MenuItem value="성인">성인</MenuItem>
+                        <MenuItem value="전체">전체</MenuItem>
+                      </Select>
+                    </FormControl>
+                    
+                    <TextField
+                      fullWidth
+                      label="참여 인원"
+                      type="number"
+                      required
+                      value={editFormData.student_count}
+                      onChange={handleEditInputChange('student_count')}
+                      inputProps={{ min: 1, max: 100 }}
+                      InputProps={{
+                        endAdornment: <Typography variant="body2" sx={{ color: 'text.secondary', ml: 1 }}>명</Typography>
+                      }}
+                    />
+                  </Box>
+                  
+                  {/* 두 번째 행: 교육 장소, 예산 */}
+                  <Box sx={{ 
+                    display: 'grid', 
+                    gap: 2,
+                    gridTemplateColumns: { xs: '1fr', sm: '2fr 1fr' }
+                  }}>
+                    <TextField
+                      fullWidth
+                      label="교육 장소"
+                      required
+                      value={editFormData.location}
+                      onChange={handleEditInputChange('location')}
+                      placeholder="예: 서울시 강남구 OO초등학교"
+                    />
+                    
+                    <Box>
+                      <TextField
+                        fullWidth
+                        label="예산 (선택사항)"
+                        type="number"
+                        value={editFormData.budget}
+                        onChange={handleEditInputChange('budget')}
+                        placeholder="3000000"
+                        inputProps={{ 
+                          min: 0, 
+                          step: 100000 
+                        }}
+                        InputProps={{
+                          endAdornment: <Typography variant="body2" sx={{ color: 'text.secondary', ml: 1 }}>원</Typography>
+                        }}
+                      />
+                      {editFormData.budget && (
+                        <Box sx={{ mt: 0.5, display: 'flex', justifyContent: 'space-between' }}>
+                          <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                            💰 {formatNumberWithCommas(editFormData.budget)}원
+                          </Typography>
+                          <Typography variant="caption" sx={{ color: 'primary.main', fontWeight: 'bold' }}>
+                            {convertToKoreanCurrency(parseInt(editFormData.budget) || 0)}
+                          </Typography>
+                        </Box>
+                      )}
+                    </Box>
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
+
+            {/* 4. 일정 설정 그룹 */}
+            <Card sx={{ mb: 3, border: '1px solid #e0e0e0' }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom sx={{ 
+                  color: '#f57c00', 
+                  fontWeight: 'bold',
+                  display: 'flex',
+                  alignItems: 'center',
+                  mb: 3
+                }}>
+                  📅 일정 설정
+                </Typography>
+                
+                <Box sx={{ 
+                  display: 'grid', 
+                  gap: 2,
+                  gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr 1fr' }
+                }}>
+                  <TextField
+                    fullWidth
+                    label="희망 날짜"
+                    type="date"
+                    required
+                    value={editFormData.preferred_date}
+                    onChange={handleEditInputChange('preferred_date')}
+                    InputLabelProps={{ shrink: true }}
+                  />
+                  
+                  <TextField
+                    fullWidth
+                    label="희망 시간"
+                    type="time"
+                    required
+                    value={editFormData.preferred_time}
+                    onChange={handleEditInputChange('preferred_time')}
+                    InputLabelProps={{ shrink: true }}
+                  />
+                  
+                  <FormControl fullWidth required>
+                    <InputLabel>교육 시간</InputLabel>
+                    <Select
+                      value={editFormData.duration}
+                      onChange={handleEditSelectChange('duration')}
+                      label="교육 시간"
+                    >
+                      <MenuItem value="1시간">1시간</MenuItem>
+                      <MenuItem value="2시간">2시간</MenuItem>
+                      <MenuItem value="3시간">3시간</MenuItem>
+                      <MenuItem value="4시간">4시간</MenuItem>
+                      <MenuItem value="6시간">6시간</MenuItem>
+                      <MenuItem value="8시간">8시간</MenuItem>
+                      <MenuItem value="기타">기타</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Box>
+              </CardContent>
+            </Card>
           </DialogContent>
           
-          <DialogActions sx={{ px: 3, pb: 3 }}>
+          <DialogActions sx={{ px: 4, pb: 3, gap: 2 }}>
             <Button 
               onClick={handleCloseEditForm} 
               color="secondary"
               disabled={submissionStatus === 'submitting'}
-              sx={{ minWidth: 100 }}
+              sx={{ minWidth: 120 }}
             >
               취소
             </Button>
             <Button 
               type="submit" 
-              variant="contained" 
+              variant="contained"
+              disabled={submissionStatus === 'submitting' || submissionStatus === 'success'}
               sx={{ 
-                minWidth: 120,
+                minWidth: 140,
                 position: 'relative',
                 background: 'linear-gradient(45deg, #f57c00, #ff9800)'
               }}
-              disabled={submissionStatus === 'submitting' || submissionStatus === 'success'}
             >
               {submissionStatus === 'submitting' && (
                 <Box
@@ -1743,7 +1887,7 @@ export default function OutreachInquiryPage() {
               }}>
                 {submissionStatus === 'success' ? '수정 완료!' : 
                  submissionStatus === 'submitting' ? '수정 중...' : 
-                 '수정하기'}
+                 '문의 수정하기'}
               </span>
             </Button>
           </DialogActions>
