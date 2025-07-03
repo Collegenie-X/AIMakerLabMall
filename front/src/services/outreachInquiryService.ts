@@ -348,6 +348,34 @@ export const getRecentOutreachInquiries = async (): Promise<OutreachInquiry[]> =
   }
 };
 
+/**
+ * 출강 문의를 삭제하는 함수
+ * 
+ * @param id - 삭제할 출강 문의 ID
+ * @returns 삭제 성공 여부
+ */
+export const deleteOutreachInquiry = async (id: number): Promise<void> => {
+  try {
+    // 헤더 설정
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json'
+    };
+    
+    // 토큰이 필수 (로그인한 사용자만 삭제 가능)
+    const token = getToken();
+    if (!token) {
+      throw new Error('로그인이 필요합니다.');
+    }
+    headers['Authorization'] = `Bearer ${token}`;
+    
+    await axios.delete(`${API_URL}/outreach-inquiries/${id}/`, { headers });
+    
+  } catch (error) {
+    console.error('출강 문의 삭제 중 오류 발생:', error);
+    throw error;
+  }
+};
+
 // 교육 과정 한글 매핑
 export const getCourseTypeName = (courseType: string): string => {
   const courseTypeMap: Record<string, string> = {

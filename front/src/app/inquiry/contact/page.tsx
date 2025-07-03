@@ -32,7 +32,11 @@ import {
   IconButton,
   Tooltip,
   Avatar,
-  LinearProgress
+  LinearProgress,
+  Menu,
+  ListItemIcon,
+  ListItemText,
+  Snackbar
 } from '@mui/material';
 import { 
   Phone, 
@@ -51,13 +55,17 @@ import {
   Info,
   CheckCircle,
   Pending,
-  Close
+  Close,
+  MoreVert,
+  Edit,
+  Delete
 } from '@mui/icons-material';
 import { 
   getPaginatedOutreachInquiries,
   getOutreachInquiryStats,
   createOutreachInquiry,
   updateOutreachInquiry,
+  deleteOutreachInquiry,
   getCourseTypeName,
   getStatusName,
   type OutreachInquiry,
@@ -149,6 +157,17 @@ export default function OutreachInquiryPage() {
   // 로그인 상태 관리
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [showLoginAlert, setShowLoginAlert] = useState<boolean>(false);
+
+  // 더보기 메뉴 상태
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [selectedInquiryForMenu, setSelectedInquiryForMenu] = useState<OutreachInquiry | null>(null);
+  
+  // 팝업 메시지 상태
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: '',
+    severity: 'success' as 'success' | 'error' | 'info' | 'warning'
+  });
 
   // 폼 데이터
   const [formData, setFormData] = useState<InquiryForm>({
@@ -418,6 +437,9 @@ export default function OutreachInquiryPage() {
       setSuccessMessage('🎉 문의가 완료되었습니다! 빠른 시일 내에 연락드리겠습니다.');
       setSubmitted(true);
       
+      // 중앙 팝업 메시지 표시
+      showMessage('🎉 문의가 완료되었습니다! 빠른 시일 내에 연락드리겠습니다.', 'success');
+      
       // 4단계: 데이터 새로고침 (병렬 처리)
       console.log('📊 게시판 데이터 새로고침 중...');
       await Promise.all([
@@ -426,13 +448,13 @@ export default function OutreachInquiryPage() {
       ]);
       console.log('✅ 게시판 데이터 새로고침 완료');
       
-      // 5단계: 3초 후 폼 자동 닫기
+      // 5단계: 2초 후 폼 자동 닫기
       setTimeout(() => {
         console.log('🔄 폼 닫기 및 상태 초기화');
         handleCloseForm();
         setSubmissionStatus('idle');
         setSuccessMessage('');
-      }, 3000);
+      }, 2000);
       
     } catch (error: any) {
       console.error('❌ 문의 생성 중 오류:', error);
@@ -547,6 +569,9 @@ export default function OutreachInquiryPage() {
       setSubmissionStatus('success');
       setSuccessMessage(`"${editFormData.title}" 문의가 성공적으로 수정되었습니다!`);
       
+      // 중앙 팝업 메시지 표시
+      showMessage(`"${editFormData.title}" 문의가 수정되었습니다!`, 'success');
+      
       // 게시판 데이터 새로고침
       await Promise.all([
         loadInquiriesData(),
@@ -558,7 +583,7 @@ export default function OutreachInquiryPage() {
         handleCloseEditForm();
         setSubmissionStatus('idle');
         setSuccessMessage('');
-      }, 2500);
+      }, 2000);
       
     } catch (error: any) {
       console.error('문의 수정 중 오류:', error);
@@ -574,6 +599,82 @@ export default function OutreachInquiryPage() {
       setTimeout(() => {
         setSubmissionStatus('idle');
       }, 1000);
+    }
+  };
+
+  /**
+   * 더보기 메뉴 열기
+   */
+  const handleMoreClick = (event: React.MouseEvent<HTMLElement>, inquiry: OutreachInquiry) => {
+    event.stopPropagation(); // 테이블 행 클릭 이벤트 방지
+    setAnchorEl(event.currentTarget);
+    setSelectedInquiryForMenu(inquiry);
+  };
+
+  /**
+   * 더보기 메뉴 닫기
+   */
+  const handleMoreClose = () => {
+    setAnchorEl(null);
+    setSelectedInquiryForMenu(null);
+  };
+
+  /**
+   * 팝업 메시지 표시 함수
+   */
+  const showMessage = (message: string, severity: 'success' | 'error' | 'info' | 'warning' = 'success') => {
+    setSnackbar({
+      open: true,
+      message,
+      severity
+    });
+  };
+
+  /**
+   * 팝업 메시지 닫기
+   */
+  const handleSnackbarClose = () => {
+    setSnackbar(prev => ({ ...prev, open: false }));
+  };
+
+  /**
+   * 문의 삭제 함수
+   * 작성자만 삭제 가능
+   */
+  const handleDeleteInquiry = async () => {
+    if (!selectedInquiryForMenu) return;
+    
+    try {
+      await deleteOutreachInquiry(selectedInquiryForMenu.id);
+      
+      // 성공 메시지 표시
+      showMessage(`"${selectedInquiryForMenu.title}" 문의가 삭제되었습니다.`, 'success');
+      
+      // 데이터 새로고침
+      await Promise.all([
+        loadInquiriesData(),
+        loadStatsData()
+      ]);
+      
+      handleMoreClose();
+      
+    } catch (error: any) {
+      console.error('문의 삭제 중 오류:', error);
+      const errorMessage = error.response?.data?.message || 
+                          error.message || 
+                          '문의 삭제 중 오류가 발생했습니다.';
+      showMessage(errorMessage, 'error');
+    }
+  };
+
+  /**
+   * 수정 메뉴 클릭 처리
+   */
+  const handleEditMenuClick = () => {
+    if (selectedInquiryForMenu) {
+      setSelectedInquiry(selectedInquiryForMenu);
+      handleOpenEditForm();
+      handleMoreClose();
     }
   };
 
@@ -775,7 +876,7 @@ export default function OutreachInquiryPage() {
                 <TableRow sx={{ backgroundColor: '#f8f9fa' }}>
                   <TableCell sx={{ 
                     fontWeight: 'bold', 
-                    width: '40%',
+                    width: '35%',
                     fontSize: '0.95rem',
                     py: 2
                   }}>
@@ -791,7 +892,7 @@ export default function OutreachInquiryPage() {
                   </TableCell>
                   <TableCell sx={{ 
                     fontWeight: 'bold', 
-                    width: '20%',
+                    width: '15%',
                     fontSize: '0.95rem',
                     py: 2
                   }}>
@@ -805,6 +906,15 @@ export default function OutreachInquiryPage() {
                   }}>
                     생성일
                   </TableCell>
+                  <TableCell sx={{ 
+                    fontWeight: 'bold', 
+                    width: '10%',
+                    fontSize: '0.95rem',
+                    py: 2,
+                    textAlign: 'center'
+                  }}>
+                    액션
+                  </TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -814,6 +924,7 @@ export default function OutreachInquiryPage() {
                       key={inquiry.id} 
                       hover
                       onClick={() => handleViewDetails(inquiry)}
+                      onContextMenu={(event) => handleMoreClick(event, inquiry)}
                       sx={{ 
                         cursor: 'pointer',
                         '&:hover': {
@@ -860,11 +971,21 @@ export default function OutreachInquiryPage() {
                           })}
                         </Typography>
                       </TableCell>
+                      <TableCell>
+                        <IconButton
+                          aria-label="more"
+                          aria-controls="long-menu"
+                          aria-haspopup="true"
+                          onClick={(event) => handleMoreClick(event, inquiry)}
+                        >
+                          <MoreVert />
+                        </IconButton>
+                      </TableCell>
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={4} align="center" sx={{ py: 4 }}>
+                    <TableCell colSpan={5} align="center" sx={{ py: 4 }}>
                       <Typography variant="body2" color="text.secondary">
                         {loading ? '데이터를 불러오는 중...' : '문의 내역이 없습니다.'}
                       </Typography>
@@ -874,6 +995,45 @@ export default function OutreachInquiryPage() {
               </TableBody>
             </Table>
           </TableContainer>
+
+          {/* 더보기 메뉴 */}
+          <Menu
+            anchorEl={anchorEl}
+            open={Boolean(anchorEl)}
+            onClose={handleMoreClose}
+            anchorOrigin={{
+              vertical: 'top',
+              horizontal: 'right',
+            }}
+            transformOrigin={{
+              vertical: 'top',
+              horizontal: 'right',
+            }}
+          >
+            {selectedInquiryForMenu?.is_owner && (
+              <MenuItem onClick={handleEditMenuClick}>
+                <ListItemIcon>
+                  <Edit fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>수정</ListItemText>
+              </MenuItem>
+            )}
+            {selectedInquiryForMenu?.is_owner && (
+              <MenuItem onClick={handleDeleteInquiry} sx={{ color: 'error.main' }}>
+                <ListItemIcon>
+                  <Delete fontSize="small" sx={{ color: 'error.main' }} />
+                </ListItemIcon>
+                <ListItemText>삭제</ListItemText>
+              </MenuItem>
+            )}
+            {!selectedInquiryForMenu?.is_owner && (
+              <MenuItem disabled>
+                <ListItemText sx={{ color: 'text.disabled' }}>
+                  작성자만 수정/삭제 가능
+                </ListItemText>
+              </MenuItem>
+            )}
+          </Menu>
         </Box>
       </Box>
 
@@ -1910,6 +2070,23 @@ export default function OutreachInquiryPage() {
           </DialogActions>
         </form>
       </Dialog>
+
+      {/* 중앙 팝업 메시지 */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={3000}
+        onClose={handleSnackbarClose}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        sx={{ mt: 8 }}
+      >
+        <Alert 
+          onClose={handleSnackbarClose} 
+          severity={snackbar.severity}
+          sx={{ width: '100%', minWidth: 300 }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 } 
