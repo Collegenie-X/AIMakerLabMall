@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Container,
   Box,
@@ -38,7 +39,8 @@ import {
   List,
   ListItem,
   ListItemText,
-  ListItemIcon
+  ListItemIcon,
+  Snackbar
 } from '@mui/material';
 import {
   CalendarMonth,
@@ -75,6 +77,10 @@ import {
   NavigateNext,
   FiberManualRecord
 } from '@mui/icons-material';
+import { 
+  enrollInClass, 
+  type ClassEnrollmentData 
+} from '@/services/outreachInquiryService';
 
 /**
  * 수업 차시 정보 타입
@@ -186,6 +192,7 @@ interface RegistrationInfo {
  * AI MAKER LAB의 교육 일정을 확인하고 신청할 수 있는 페이지
  */
 export default function EducationSchedulePage() {
+  const router = useRouter();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [currentMonth, setCurrentMonth] = useState<string>('2024-03');
   const [openDialog, setOpenDialog] = useState(false);
@@ -211,106 +218,105 @@ export default function EducationSchedulePage() {
   const [selectedCurriculumVideo, setSelectedCurriculumVideo] = useState<string>('');
   const [selectedLessonTitle, setSelectedLessonTitle] = useState<string>('');
 
+  // 추가 상태 관리
+  const [submitting, setSubmitting] = useState(false);
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: '',
+    severity: 'success' as 'success' | 'error' | 'info' | 'warning'
+  });
+
   /**
    * 샘플 교육 일정 데이터 (실제 이미지 및 추가 정보 포함)
    */
   const [scheduleData, setScheduleData] = useState<EducationSchedule[]>([
     {
-      id: '1',
-      title: '앱 인벤터 기초 과정',
-      date: '2024-03-15',
+      id: '7',
+      title: '아두이노 기초 및 개발환경 구축',
+      date: '2025-07-10',
       time: '14:00',
-      duration: '3시간',
-      instructor: '김AI 강사',
-      participants: 12,
+      duration: '12시간',
+      instructor: '김강사',
+      participants: 9,
       maxParticipants: 15,
       level: '초급',
-      category: '앱 개발',
+      category: '하드웨어',
       status: '예정',
       classType: '오프라인',
-      description: '스마트폰 앱 개발의 첫걸음, 블록 코딩으로 쉽게 배우는 앱 인벤터',
+      description: '아두이노 보드를 활용한 기초 프로그래밍과 센서 제어를 배웁니다',
       registrationStatus: '미신청',
-      price: 150000,
+      price: 120000,
       location: '강남 본원 3층 실습실',
-      thumbnail: 'https://images.unsplash.com/photo-1512941937669-0a1dd7228f2d?w=400&h=200&fit=crop',
+      thumbnail: 'https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=400&h=200&fit=crop',
       videoUrl: 'https://www.youtube.com/embed/kR48wdEn6cc',
       averageRating: 4.8,
       totalReviews: 24,
       lessonPlans: [
         { 
           session: 1, 
-          title: '앱 인벤터 소개 및 개발환경 설정', 
-          duration: '60분', 
-          objectives: ['앱 인벤터 개념과 특징 이해', '개발환경 설치 및 설정', '블록 코딩 기초 개념', '첫 번째 프로젝트 생성'],
-          previewVideoUrl: 'https://www.youtube.com/embed/nL34zDTPkcs'
+          title: '아두이노 기초 및 개발환경 구축', 
+          duration: '90분', 
+          objectives: ['아두이노 보드의 구조와 원리 이해', '아두이노 IDE 설치 및 설정', '기본 회로 구성 방법', '첫 번째 LED 점멸 프로그램'],
+          previewVideoUrl: 'https://www.youtube.com/embed/kR48wdEn6cc'
         },
         { 
           session: 2, 
-          title: '기본 컴포넌트와 간단한 앱 제작', 
-          duration: '90분', 
-          objectives: ['버튼, 텍스트박스 등 기본 컴포넌트 사용법', '이벤트 처리 블록 활용', '간단한 계산기 앱 제작', '앱 테스트 및 디버깅'],
+          title: '다양한 센서 연결 및 데이터 수집', 
+          duration: '120분', 
+          objectives: ['온도/습도 센서 활용', '조도 센서와 LED 제어', '움직임 감지 센서 응용', '센서 데이터 시리얼 모니터링'],
           previewVideoUrl: 'https://www.youtube.com/embed/aircAruvnKk'
         },
         { 
           session: 3, 
-          title: '고급 기능 활용 및 실습 프로젝트', 
+          title: 'IoT 프로젝트 제작 및 클라우드 연동', 
           duration: '90분', 
-          objectives: ['센서 데이터 활용하기', '데이터베이스 연동 기초', '멀티미디어 활용', '나만의 앱 프로젝트 완성'],
+          objectives: ['WiFi 모듈 연결 및 설정', '클라우드 데이터베이스 연동', '스마트홈 시뮬레이션', '프로젝트 발표 및 시연'],
           previewVideoUrl: 'https://www.youtube.com/embed/ZPRIMQP3wy8'
         }
       ],
       classImages: [
-        'https://images.unsplash.com/photo-1581090464777-f3220bbe1b8b?w=800&h=400&fit=crop',
-        'https://images.unsplash.com/photo-1517077304055-6e89abbf09b0?w=800&h=400&fit=crop',
-        'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&h=400&fit=crop',
-        'https://images.unsplash.com/photo-1512941937669-0a1dd7228f2d?w=800&h=400&fit=crop'
+        'https://images.unsplash.com/photo-1553062407-6e89abbf09b0?w=800&h=400&fit=crop',
+        'https://images.unsplash.com/photo-1581093804475-577d72e38aa0?w=800&h=400&fit=crop',
+        'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&h=400&fit=crop',
+        'https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=800&h=400&fit=crop'
       ],
-      equipment: ['태블릿 또는 스마트폰', '앱 인벤터 개발 키트', 'USB 케이블', '실습용 센서 모듈'],
-      targetAge: '초등 4학년 이상',
+      equipment: ['아두이노 우노 보드', '센서 키트 (온도/습도/조도/움직임)', '브레드보드 및 점퍼선', 'USB 케이블', 'WiFi 모듈'],
+      targetAge: '중학생 이상',
       levelGuide: {
         level: '초급',
-        prerequisites: ['컴퓨터 기본 조작 가능', '마우스 클릭과 드래그 능숙', '한글 타이핑 가능'],
-        skillsGained: ['블록 코딩 프로그래밍', '앱 개발 기초 이해', '논리적 사고력 향상', '창의적 문제 해결 능력'],
-        recommendedFor: ['프로그래밍을 처음 접하는 학생', '앱 개발에 관심있는 초보자', '창의력 개발을 원하는 아이들', '코딩 교육을 시작하려는 학부모']
+        prerequisites: ['기초 전자회로 이해', '간단한 프로그래밍 경험', '논리적 사고 능력', '영어 단어 이해 능력'],
+        skillsGained: ['하드웨어 프로그래밍', 'IoT 개념 및 구현', '센서 데이터 처리', '문제 해결을 위한 AI 활용'],
+        recommendedFor: ['메이커 활동에 관심있는 학생', '로봇 공학 지망생', '창의적 문제 해결을 좋아하는 학생', 'STEM 교육에 관심있는 학부모']
       },
       discounts: [
         {
-          type: 'earlybird',
-          title: '얼리버드 할인',
-          description: '개강 2주 전 신청시 15% 할인',
-          discountRate: 15,
-          condition: '2024-03-01 이전 신청',
-          validUntil: '2024-03-01',
-          isActive: true
-        },
-        {
-          type: 'group',
-          title: '그룹 할인',
-          description: '3명 이상 단체 신청시 20% 할인',
-          discountRate: 20,
-          condition: '3명 이상 동시 신청',
-          validUntil: '2024-03-10',
+          type: 'season',
+          title: '봄 시즌 할인',
+          description: '3월 한정 특가 혜택',
+          discountRate: 10,
+          condition: '3월 중 수강 신청시',
+          validUntil: '2024-03-31',
           isActive: true
         }
       ],
       reviews: [
         {
-          id: '1',
-          studentName: '박지민',
+          id: '3',
+          studentName: '이준호',
           rating: 5,
-          comment: '정말 재미있게 앱을 만들 수 있었어요! 선생님이 친절하게 설명해주셔서 이해가 쉬웠고, 집에 가서도 계속 만들어보고 싶어요.',
-          date: '2024-02-20',
-          course: '앱 인벤터 기초 과정',
-          avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face'
+          comment: '실제로 센서로 작동하는 걸 보니까 너무 신기했어요! IoT가 이런 거구나 하고 깨달았고, 집에서도 더 만들어보고 싶습니다.',
+          date: '2024-02-15',
+          course: '아두이노 센서 활용 프로젝트',
+          avatar: 'https://images.unsplash.com/photo-1519345182560-3f2917c472ef?w=100&h=100&fit=crop&crop=face'
         },
         {
-          id: '2',
-          studentName: '김민수',
+          id: '4',
+          studentName: '최서연',
           rating: 4,
-          comment: '처음에는 어려울 줄 알았는데, 블록 코딩이라서 생각보다 쉬웠어요. 나만의 게임 앱을 만든 게 정말 신기해요!',
-          date: '2024-02-18',
-          course: '앱 인벤터 기초 과정',
-          avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face'
+          comment: '중급 과정이라 조금 어려웠지만, 결과물을 보니 정말 뿌듯했어요. 더 고급 과정도 듣고 싶습니다!',
+          date: '2024-02-12',
+          course: '아두이노 센서 활용 프로젝트',
+          avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b7c7?w=100&h=100&fit=crop&crop=face'
         }
       ]
     },
@@ -583,6 +589,186 @@ export default function EducationSchedulePage() {
           avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b7c7?w=100&h=100&fit=crop&crop=face'
         }
       ]
+    },
+    {
+      id: '8',
+      title: 'Python 기초 코딩 교육',
+      date: '2025-07-17',
+      time: '15:30',
+      duration: '16시간',
+      instructor: '이강사',
+      participants: 12,
+      maxParticipants: 20,
+      level: '중급',
+      category: '프로그래밍',
+      status: '예정',
+      classType: '직접출강',
+      description: 'Python 프로그래밍 언어의 기초부터 실전 프로젝트까지 학습합니다.',
+      registrationStatus: '미신청',
+      price: 200000,
+      location: '서울시 강남구',
+      thumbnail: 'https://images.unsplash.com/photo-1555949963-aa79dcee981c?w=400&h=200&fit=crop',
+      videoUrl: 'https://www.youtube.com/embed/aircAruvnKk',
+      averageRating: 4.6,
+      totalReviews: 18,
+      lessonPlans: [
+        { 
+          session: 1, 
+          title: 'Python 기초 이해', 
+          duration: '4시간', 
+          objectives: ['Python 언어의 기본 개념', '변수와 자료형', '조건문과 반복문', '함수 작성 방법'],
+          previewVideoUrl: 'https://www.youtube.com/embed/kR48wdEn6cc'
+        },
+        { 
+          session: 2, 
+          title: '데이터 분석을 위한 기초', 
+          duration: '6시간', 
+          objectives: ['데이터 수집과 전처리', '데이터 시각화 기초', '데이터 분석 도구 소개', '기초 통계 분석'],
+          previewVideoUrl: 'https://www.youtube.com/embed/nL34zDTPkcs'
+        },
+        { 
+          session: 3, 
+          title: '프로그래밍 심화', 
+          duration: '6시간', 
+          objectives: ['객체지향 프로그래밍', '예외처리와 모듈', '파일 입출력과 데이터베이스', '실전 프로젝트 기획'],
+          previewVideoUrl: 'https://www.youtube.com/embed/ZPRIMQP3wy8'
+        }
+      ],
+      classImages: [
+        'https://images.unsplash.com/photo-1555949963-aa79dcee981c?w=800&h=400&fit=crop',
+        'https://images.unsplash.com/photo-1516110833967-0b5716ca1387?w=800&h=400&fit=crop',
+        'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&h=400&fit=crop',
+        'https://images.unsplash.com/photo-1555949963-aa79dcee981c?w=800&h=400&fit=crop'
+      ],
+      equipment: ['개인 노트북 (Windows/Mac)', 'Python 개발환경 (설치 지원)', 'Jupyter Notebook', '실습용 데이터셋', '클라우드 계정'],
+      targetAge: '고등학생 이상',
+      levelGuide: {
+        level: '중급',
+        prerequisites: ['Python 기초 문법 이해', '수학적 사고력 (통계 기초)', '논리적 분석 능력', '영어 기술 문서 읽기 가능'],
+        skillsGained: ['머신러닝 개념 및 구현', 'AI 모델 개발 기초', '데이터 분석 및 시각화', '문제 해결을 위한 AI 활용'],
+        recommendedFor: ['AI 분야 진출 희망자', '데이터 과학에 관심있는 학생', '프로그래밍 심화 학습자', '미래 기술에 관심있는 성인']
+      },
+      discounts: [
+        {
+          type: 'group',
+          title: '기업 출강 할인',
+          description: '5명 이상 기업 출강시 25% 할인',
+          discountRate: 25,
+          condition: '5명 이상 기업 단체 신청',
+          validUntil: '2024-03-20',
+          isActive: true
+        }
+      ],
+      reviews: [
+        {
+          id: '9',
+          studentName: '정하늘',
+          rating: 5,
+          comment: 'Python 프로그래밍을 배우면서 많은 것을 배웠어요! 실제로 프로젝트를 만들어보니 더욱 흥미로웠습니다.',
+          date: '2024-02-10',
+          course: 'Python 기초 코딩 교육',
+          avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face'
+        },
+        {
+          id: '10',
+          studentName: '한도현',
+          rating: 4,
+          comment: '처음에는 어려웠지만 선생님이 친절하게 도와주셔서 멋진 프로젝트를 완성할 수 있었어요.',
+          date: '2024-02-08',
+          course: 'Python 기초 코딩 교육',
+          avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop&crop=face'
+        }
+      ]
+    },
+    {
+      id: '9',
+      title: 'AI 코딩과 머신러닝 입문',
+      date: '2025-07-24',
+      time: '13:00',
+      duration: '20시간',
+      instructor: '박박사',
+      participants: 10,
+      maxParticipants: 12,
+      level: '고급',
+      category: 'AI',
+      status: '예정',
+      classType: '오프라인',
+      description: 'AI와 머신러닝의 기초 개념부터 실습까지 체계적으로 학습합니다.',
+      registrationStatus: '미신청',
+      price: 300000,
+      location: '강남 본원 AI 실습실',
+      thumbnail: 'https://images.unsplash.com/photo-1555949963-aa79dcee981c?w=400&h=200&fit=crop',
+      videoUrl: 'https://www.youtube.com/embed/aircAruvnKk',
+      averageRating: 4.9,
+      totalReviews: 32,
+      lessonPlans: [
+        { 
+          session: 1, 
+          title: 'AI와 머신러닝 개념 이해', 
+          duration: '120분', 
+          objectives: ['인공지능의 역사와 발전 과정', '머신러닝의 종류와 특징', '일상생활 속 AI 사례 분석', '머신러닝 프로젝트 설계 방법'],
+          previewVideoUrl: 'https://www.youtube.com/embed/kR48wdEn6cc'
+        },
+        { 
+          session: 2, 
+          title: 'Python 기초 및 데이터 처리', 
+          duration: '150분', 
+          objectives: ['Python 기본 문법 및 라이브러리', 'NumPy, Pandas를 활용한 데이터 처리', '데이터 시각화 기초', '실제 데이터셋 다루기'],
+          previewVideoUrl: 'https://www.youtube.com/embed/nL34zDTPkcs'
+        },
+        { 
+          session: 3, 
+          title: '머신러닝 모델 구현 및 실습', 
+          duration: '150분', 
+          objectives: ['Scikit-learn을 활용한 모델 구현', '이미지 분류 프로젝트', '예측 모델 성능 평가', '나만의 AI 프로젝트 완성'],
+          previewVideoUrl: 'https://www.youtube.com/embed/ZPRIMQP3wy8'
+        }
+      ],
+      classImages: [
+        'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=800&h=400&fit=crop',
+        'https://images.unsplash.com/photo-1516110833967-0b5716ca1387?w=800&h=400&fit=crop',
+        'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&h=400&fit=crop',
+        'https://images.unsplash.com/photo-1555949963-aa79dcee981c?w=800&h=400&fit=crop'
+      ],
+      equipment: ['개인 노트북 (Windows/Mac)', 'Python 개발환경 (설치 지원)', 'Jupyter Notebook', '실습용 데이터셋', '클라우드 계정'],
+      targetAge: '고등학생 이상',
+      levelGuide: {
+        level: '고급',
+        prerequisites: ['Python 기초 문법 이해', '수학적 사고력 (통계 기초)', '논리적 분석 능력', '영어 기술 문서 읽기 가능'],
+        skillsGained: ['머신러닝 개념 및 구현', 'AI 모델 개발 기초', '데이터 분석 및 시각화', '문제 해결을 위한 AI 활용'],
+        recommendedFor: ['AI 분야 진출 희망자', '데이터 과학에 관심있는 학생', '프로그래밍 심화 학습자', '미래 기술에 관심있는 성인']
+      },
+      discounts: [
+        {
+          type: 'season',
+          title: '여름 특가',
+          description: '여름휴가 특가 혜택',
+          discountRate: 0,
+          condition: '7월 신청시',
+          validUntil: '2025-07-31',
+          isActive: false
+        }
+      ],
+      reviews: [
+        {
+          id: '5',
+          studentName: '정하늘',
+          rating: 5,
+          comment: 'AI에 대해 막연하게만 생각했는데, 실제로 모델을 만들어보니 정말 신기했어요! 앞으로도 계속 공부하고 싶습니다.',
+          date: '2024-02-10',
+          course: 'AI 머신러닝 입문',
+          avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face'
+        },
+        {
+          id: '6',
+          studentName: '한도현',
+          rating: 5,
+          comment: '어려운 내용이지만 차근차근 설명해주셔서 이해할 수 있었습니다. 실무에서도 바로 활용할 수 있을 것 같아요!',
+          date: '2024-02-08',
+          course: 'AI 머신러닝 입문',
+          avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop&crop=face'
+        }
+      ]
     }
   ]);
 
@@ -773,11 +959,61 @@ export default function EducationSchedulePage() {
   };
 
   /**
-   * 신청 처리
+   * 팝업 메시지 표시 함수
    */
-  const handleRegistrationSubmit = () => {
-    if (selectedSchedule) {
-      // 신청 상태 업데이트
+  const showMessage = (message: string, severity: 'success' | 'error' | 'info' | 'warning' = 'success') => {
+    setSnackbar({
+      open: true,
+      message,
+      severity
+    });
+  };
+
+  /**
+   * 팝업 메시지 닫기
+   */
+  const handleSnackbarClose = () => {
+    setSnackbar(prev => ({ ...prev, open: false }));
+  };
+
+  /**
+   * 신청 처리 - 실제 API 호출로 DB에 저장
+   * 함수형 모듈형 구조로 순차적 처리 구현
+   */
+  const handleRegistrationSubmit = async () => {
+    if (!selectedSchedule) {
+      showMessage('선택된 수업이 없습니다.', 'error');
+      return;
+    }
+
+    // 1단계: 입력값 검증
+    if (!registrationInfo.studentName || !registrationInfo.phone || !registrationInfo.email) {
+      showMessage('모든 필수 정보를 입력해주세요.', 'error');
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      console.log(`📝 수업 신청 시작: ${selectedSchedule.title}`);
+
+      // 2단계: API 데이터 형식 변환
+      const enrollmentData: ClassEnrollmentData = {
+        class_id: parseInt(selectedSchedule.id),
+        requester_name: registrationInfo.studentName,
+        phone: registrationInfo.phone,
+        email: registrationInfo.email,
+        student_count: registrationInfo.outreachInfo?.studentCount || 1,
+        message: `[수업신청] ${selectedSchedule.title}`,
+        special_requests: registrationInfo.outreachInfo?.specialRequests || ''
+      };
+
+      console.log('📤 API 호출 데이터:', enrollmentData);
+
+      // 3단계: 백엔드 API 호출
+      const response = await enrollInClass(enrollmentData);
+      console.log('✅ 수업 신청 성공:', response);
+
+      // 4단계: 성공 처리
       setScheduleData(prev => 
         prev.map(item => 
           item.id === selectedSchedule.id 
@@ -785,7 +1021,32 @@ export default function EducationSchedulePage() {
             : item
         )
       );
+
+      // 5단계: 성공 메시지 표시
+      showMessage('🎉 수강 신청이 완료되었습니다! 3초 후 문의 내역을 확인할 수 있습니다.', 'success');
+      
+      // 6단계: 다이얼로그 닫기
       handleRegistrationClose();
+      
+      // 7단계: 3초 후 자동으로 /inquiry/contact 페이지로 이동
+      setTimeout(() => {
+        console.log('📍 문의 내역 페이지로 이동합니다...');
+        router.push('/inquiry/contact');
+      }, 3000);
+
+      console.log('✅ 수업 신청 처리 완료');
+
+    } catch (error: any) {
+      console.error('❌ 수업 신청 중 오류:', error);
+      
+      const errorMessage = error.response?.data?.message || 
+                          error.message || 
+                          '수업 신청 중 오류가 발생했습니다.';
+      
+      showMessage(`❌ ${errorMessage}`, 'error');
+      
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -948,14 +1209,14 @@ export default function EducationSchedulePage() {
    * 일정 페이지로 이동 (호환성)
    */
   const handleMoveToSchedule = () => {
-    window.location.href = '/inquiry/schedule';
+    router.push('/inquiry/schedule');
   };
 
   /**
    * 출장 강의 문의 페이지로 이동 (호환성)
    */
   const handleMoveToContact = () => {
-    window.location.href = '/inquiry/contact';
+    router.push('/inquiry/contact');
   };
 
   return (
@@ -1049,7 +1310,7 @@ export default function EducationSchedulePage() {
                 }
               }}
             >
-              출장 강의 문의
+              출장 강의
             </Button>
           </Box>
           <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
@@ -1090,12 +1351,19 @@ export default function EducationSchedulePage() {
         </Paper>
 
         {/* 교육 일정 목록 */}
-        <Grid container spacing={3}>
+        <Box 
+          sx={{ 
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: 3,
+            justifyContent: 'center'
+          }}
+        >
           {filteredSchedules.map((schedule, index) => {
             const { originalPrice, discountedPrice, bestDiscount } = calculateDiscountPrice(schedule);
             
             return (
-              <Grid item xs={12} md={6} lg={4} key={schedule.id}>
+              <Box key={schedule.id} sx={{ flex: '0 0 auto' }}>
                 <Card 
                   sx={{ 
                     width: 320,
@@ -1479,10 +1747,10 @@ export default function EducationSchedulePage() {
                     </Box>
                   </CardContent>
                 </Card>
-              </Grid>
+              </Box>
             );
           })}
-        </Grid>
+        </Box>
 
         {/* 신청 안내 */}
         <Box sx={{ mt: 6 }} className="fade-in-up">
@@ -2118,24 +2386,45 @@ export default function EducationSchedulePage() {
               취소
             </Button>
             <Button 
-              onClick={handleRegistrationSubmit} 
+              onClick={handleRegistrationSubmit}
               variant="contained"
-              size="large"
+              disabled={submitting}
               sx={{
-                px: 4,
-                py: 1,
-                background: 'linear-gradient(45deg, #667eea, #764ba2)',
-                fontWeight: 'bold',
-                fontSize: '1rem',
+                background: submitting 
+                  ? 'linear-gradient(45deg, #ccc, #aaa)' 
+                  : 'linear-gradient(45deg, #1976d2, #42a5f5)',
                 '&:hover': {
-                  background: 'linear-gradient(45deg, #5a6fd8, #6a4190)',
-                  transform: 'translateY(-1px)',
-                  boxShadow: 3
+                  background: submitting 
+                    ? 'linear-gradient(45deg, #ccc, #aaa)' 
+                    : 'linear-gradient(45deg, #1565c0, #1976d2)',
+                  transform: submitting ? 'none' : 'translateY(-1px)',
+                  boxShadow: submitting ? 'none' : 3
                 },
-                transition: 'all 0.2s ease'
+                transition: 'all 0.2s ease',
+                position: 'relative',
+                minWidth: 120
               }}
             >
-              신청하기
+              {submitting ? (
+                <>
+                  <LinearProgress 
+                    sx={{ 
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      height: 2,
+                      backgroundColor: 'transparent',
+                      '& .MuiLinearProgress-bar': {
+                        backgroundColor: 'rgba(255, 255, 255, 0.5)'
+                      }
+                    }} 
+                  />
+                  신청 중...
+                </>
+              ) : (
+                '신청하기'
+              )}
             </Button>
           </DialogActions>
         </Dialog>
@@ -2331,6 +2620,28 @@ export default function EducationSchedulePage() {
           </DialogActions>
         </Dialog>
       </Container>
+
+      {/* 성공/오류 메시지 스낵바 */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={3000}
+        onClose={handleSnackbarClose}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        sx={{ mt: 8 }}
+      >
+        <Alert 
+          onClose={handleSnackbarClose} 
+          severity={snackbar.severity}
+          sx={{ 
+            width: '100%', 
+            minWidth: 300,
+            fontWeight: 'bold',
+            fontSize: '1rem'
+          }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </>
   );
 } 

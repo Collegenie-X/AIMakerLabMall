@@ -410,4 +410,52 @@ export const getStatusName = (status: string): string => {
   };
   
   return statusMap[status] || status;
+};
+
+/**
+ * 수업 신청 데이터 타입 정의
+ */
+export interface ClassEnrollmentData {
+  class_id: number;
+  requester_name: string;
+  phone: string;
+  email: string;
+  student_count: number;
+  message: string;
+  special_requests?: string;
+}
+
+/**
+ * 수업 신청 함수
+ * InternalClass 정보를 바탕으로 OutreachInquiry 형태로 변환되어 저장됩니다.
+ * 
+ * @param enrollmentData - 수업 신청 데이터
+ * @returns 생성된 문의 객체
+ */
+export const enrollInClass = async (
+  enrollmentData: ClassEnrollmentData
+): Promise<OutreachInquiry> => {
+  try {
+    // 헤더 설정
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json'
+    };
+    
+    // 토큰이 있는 경우에만 Authorization 헤더 추가
+    const token = getToken();
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    const response = await axios.post(
+      `${API_URL}/internal-classes/${enrollmentData.class_id}/enroll/`, 
+      enrollmentData,
+      { headers }
+    );
+    
+    return response.data;
+  } catch (error) {
+    console.error('수업 신청 중 오류 발생:', error);
+    throw error;
+  }
 }; 
