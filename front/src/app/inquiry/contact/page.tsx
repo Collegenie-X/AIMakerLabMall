@@ -50,7 +50,8 @@ import {
   Business,
   Info,
   CheckCircle,
-  Pending
+  Pending,
+  Close
 } from '@mui/icons-material';
 import { 
   getPaginatedOutreachInquiries,
@@ -64,6 +65,17 @@ import {
   type UpdateOutreachInquiryData,
   type OutreachInquiryStats
 } from '@/services/outreachInquiryService';
+
+/**
+ * 로그인 상태를 확인하는 함수
+ * 브라우저 환경에서 토큰 존재 여부로 판단
+ */
+const checkLoginStatus = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  
+  const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+  return !!token;
+};
 
 /**
  * 숫자를 한글 금액으로 변환하는 함수
@@ -134,6 +146,10 @@ export default function OutreachInquiryPage() {
   const [submissionStatus, setSubmissionStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
   const [successMessage, setSuccessMessage] = useState<string>('');
   
+  // 로그인 상태 관리
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+  const [showLoginAlert, setShowLoginAlert] = useState<boolean>(false);
+
   // 폼 데이터
   const [formData, setFormData] = useState<InquiryForm>({
     title: '',
@@ -175,6 +191,9 @@ export default function OutreachInquiryPage() {
    */
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    
+    // 로그인 상태 확인
+    setIsLoggedIn(checkLoginStatus());
     
     loadInquiriesData();
     loadStatsData();
@@ -219,6 +238,23 @@ export default function OutreachInquiryPage() {
   };
 
   /**
+   * 로그인 필요 알림 표시 함수
+   */
+  const showLoginRequiredAlert = () => {
+    setShowLoginAlert(true);
+    setTimeout(() => {
+      setShowLoginAlert(false);
+    }, 3000);
+  };
+
+  /**
+   * 로그인 페이지로 이동하는 함수
+   */
+  const goToLoginPage = () => {
+    window.location.href = '/login';
+  };
+
+  /**
    * 상태별 색상 반환
    */
   const getStatusColor = (status: string) => {
@@ -252,8 +288,18 @@ export default function OutreachInquiryPage() {
 
   /**
    * 상세보기 다이얼로그 열기
+   * 로그인된 사용자만 상세 정보 조회 가능
    */
   const handleViewDetails = (inquiry: OutreachInquiry) => {
+    // 로그인 상태 재확인
+    const currentLoginStatus = checkLoginStatus();
+    setIsLoggedIn(currentLoginStatus);
+    
+    if (!currentLoginStatus) {
+      showLoginRequiredAlert();
+      return;
+    }
+    
     setSelectedInquiry(inquiry);
     setOpenDialog(true);
   };
@@ -523,6 +569,35 @@ export default function OutreachInquiryPage() {
 
   return (
     <Container maxWidth={false} sx={{ maxWidth: 1200, mx: 'auto', py: 4, px: 3 }}>
+      {/* 로그인 필요 알림 */}
+      {showLoginAlert && (
+        <Alert 
+          severity="warning" 
+          sx={{ 
+            mb: 3,
+            position: 'fixed',
+            top: 80,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 9999,
+            minWidth: 400,
+            boxShadow: 3
+          }}
+          action={
+            <Button 
+              color="inherit" 
+              size="small" 
+              onClick={goToLoginPage}
+              sx={{ fontWeight: 'bold' }}
+            >
+              로그인하기
+            </Button>
+          }
+        >
+          상세 정보를 확인하려면 로그인이 필요합니다.
+        </Alert>
+      )}
+
       {/* 페이지 헤더 */}
       <Box sx={{ textAlign: 'center', mb: 4 }}>
         <Typography variant="h3" component="h1" gutterBottom sx={{ fontWeight: 'bold', color: '#1976d2' }}>
@@ -795,16 +870,33 @@ export default function OutreachInquiryPage() {
       {/* 상세 정보 다이얼로그 */}
       <Dialog 
         open={openDialog} 
-        onClose={handleCloseDialog}
+        onClose={handleCloseDialog} 
         maxWidth="lg"
         fullWidth
       >
         <DialogTitle sx={{ 
           background: 'linear-gradient(45deg, #1976d2, #42a5f5)', 
           color: 'white',
-          fontWeight: 'bold'
+          fontWeight: 'bold',
+          position: 'relative',
+          pr: 6  // 오른쪽 패딩 추가 (아이콘 공간 확보)
         }}>
           📋 출강 교육 문의 상세
+          <IconButton
+            aria-label="close"
+            onClick={handleCloseDialog}
+            sx={{
+              position: 'absolute',
+              right: 8,
+              top: 8,
+              color: 'white',
+              '&:hover': {
+                backgroundColor: 'rgba(255, 255, 255, 0.1)'
+              }
+            }}
+          >
+            <Close />
+          </IconButton>
         </DialogTitle>
         
         {selectedInquiry && (
@@ -1012,10 +1104,7 @@ export default function OutreachInquiryPage() {
           </DialogContent>
         )}
         
-        <DialogActions>
-          <Button onClick={handleCloseDialog} color="primary">
-            닫기
-          </Button>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
           {selectedInquiry?.is_owner && (
             <Button 
               onClick={handleOpenEditForm}

@@ -28,6 +28,8 @@ admin@abc.com / 1234
 
 python manage.py runserver
 
+
+### frontend Server 실행
 cd front
 npm install 
 npm run dev

@@ -1,13 +1,23 @@
 from rest_framework import generics
 from rest_framework.response import Response
+from rest_framework.permissions import AllowAny
 from django.db.models import Q
 from ..models import Product
 from ..serializers.product_serializer import ProductListSerializer, ProductDetailSerializer
 
 class ProductListView(generics.ListAPIView):
+    """
+    상품 목록 조회 API View
+    - 로그인 없이 모든 사용자 접근 가능
+    - 카테고리, 검색어, 정렬 기능 지원
+    """
     serializer_class = ProductListSerializer
+    permission_classes = [AllowAny]  # 로그인 없이 접근 허용
 
     def get_queryset(self):
+        """
+        쿼리셋 필터링 및 정렬 처리
+        """
         queryset = Product.objects.all()
         
         # 카테고리 필터링
@@ -36,6 +46,9 @@ class ProductListView(generics.ListAPIView):
         return queryset
 
     def list(self, request, *args, **kwargs):
+        """
+        상품 목록 응답 데이터 구성
+        """
         queryset = self.get_queryset()
         page = self.paginate_queryset(queryset)
         
@@ -57,11 +70,19 @@ class ProductListView(generics.ListAPIView):
         })
 
 class ProductDetailView(generics.RetrieveAPIView):
+    """
+    상품 상세 조회 API View
+    - 로그인 없이 모든 사용자 접근 가능
+    """
     queryset = Product.objects.all()
     serializer_class = ProductDetailSerializer
+    permission_classes = [AllowAny]  # 로그인 없이 접근 허용
     lookup_field = 'pk'
 
     def retrieve(self, request, *args, **kwargs):
+        """
+        상품 상세 정보 응답 데이터 구성
+        """
         instance = self.get_object()
         serializer = self.get_serializer(instance, context={'request': request})
         return Response({
