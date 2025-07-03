@@ -29,6 +29,7 @@ export interface OutreachInquiry {
   formatted_datetime?: string;
   duration?: string;
   duration_display?: string;
+  duration_custom?: string;
   location?: string;
   message?: string;
   status: string;
@@ -196,6 +197,7 @@ export interface CreateOutreachInquiryData {
   preferred_date: string;
   preferred_time: string;
   duration: string;
+  duration_custom?: string;
   location: string;
   message: string;
   budget?: string;
@@ -248,6 +250,7 @@ export interface UpdateOutreachInquiryData {
   preferred_date?: string;
   preferred_time?: string;
   duration?: string;
+  duration_custom?: string;
   location?: string;
   message?: string;
   budget?: string;

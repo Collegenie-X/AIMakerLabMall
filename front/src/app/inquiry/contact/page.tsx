@@ -71,7 +71,8 @@ import {
   type OutreachInquiry,
   type CreateOutreachInquiryData,
   type UpdateOutreachInquiryData,
-  type OutreachInquiryStats
+  type OutreachInquiryStats,
+  getOutreachInquiryById
 } from '@/services/outreachInquiryService';
 
 /**
@@ -128,6 +129,7 @@ interface InquiryForm {
   preferred_date: string;
   preferred_time: string;
   duration: string;
+  duration_custom: string;
   location: string;
   message: string;
   budget: string;
@@ -181,6 +183,7 @@ export default function OutreachInquiryPage() {
     preferred_date: '',
     preferred_time: '',
     duration: '',
+    duration_custom: '',
     location: '',
     message: '',
     budget: '',
@@ -199,6 +202,7 @@ export default function OutreachInquiryPage() {
     preferred_date: '',
     preferred_time: '',
     duration: '',
+    duration_custom: '',
     location: '',
     message: '',
     budget: '',
@@ -308,8 +312,9 @@ export default function OutreachInquiryPage() {
   /**
    * 상세보기 다이얼로그 열기
    * 로그인된 사용자만 상세 정보 조회 가능
+   * 백엔드에서 상세 정보를 별도로 조회하여 모든 필드 표시
    */
-  const handleViewDetails = (inquiry: OutreachInquiry) => {
+  const handleViewDetails = async (inquiry: OutreachInquiry) => {
     // 로그인 상태 재확인
     const currentLoginStatus = checkLoginStatus();
     setIsLoggedIn(currentLoginStatus);
@@ -319,8 +324,36 @@ export default function OutreachInquiryPage() {
       return;
     }
     
-    setSelectedInquiry(inquiry);
-    setOpenDialog(true);
+    try {
+      setLoading(true);
+      console.log(`📋 ID ${inquiry.id}의 상세 정보를 조회합니다...`);
+      
+      // 백엔드에서 상세 정보 조회
+      const detailData = await getOutreachInquiryById(inquiry.id);
+      console.log('✅ 상세 정보 조회 완료:', detailData);
+      
+      setSelectedInquiry(detailData);
+      setOpenDialog(true);
+      
+    } catch (error: any) {
+      console.error('❌ 상세 정보 조회 오류:', error);
+      
+      // 권한 오류인 경우
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        showLoginRequiredAlert();
+        return;
+      }
+      
+      // 기타 오류 메시지 표시
+      const errorMessage = error.response?.data?.detail || 
+                          error.message || 
+                          '상세 정보를 불러올 수 없습니다.';
+      
+      showMessage(`❌ 오류: ${errorMessage}`, 'error');
+      
+    } finally {
+      setLoading(false);
+    }
   };
 
   /**
@@ -370,6 +403,7 @@ export default function OutreachInquiryPage() {
       preferred_date: '',
       preferred_time: '',
       duration: '',
+      duration_custom: '',
       location: '',
       message: '',
       budget: '',
@@ -422,6 +456,7 @@ export default function OutreachInquiryPage() {
         preferred_date: formData.preferred_date,
         preferred_time: formData.preferred_time,
         duration: formData.duration,
+        duration_custom: formData.duration_custom,
         location: formData.location,
         message: formData.message,
         budget: formData.budget || undefined,
@@ -492,6 +527,7 @@ export default function OutreachInquiryPage() {
         preferred_date: selectedInquiry.preferred_date || '',
         preferred_time: selectedInquiry.preferred_time || '',
         duration: selectedInquiry.duration || '',
+        duration_custom: selectedInquiry.duration_custom || '',
         location: selectedInquiry.location || '',
         message: selectedInquiry.message || '',
         budget: selectedInquiry.budget || '',
@@ -556,6 +592,7 @@ export default function OutreachInquiryPage() {
         preferred_date: editFormData.preferred_date,
         preferred_time: editFormData.preferred_time,
         duration: editFormData.duration,
+        duration_custom: editFormData.duration_custom,
         location: editFormData.location,
         message: editFormData.message,
         budget: editFormData.budget || undefined,
@@ -1071,6 +1108,16 @@ export default function OutreachInquiryPage() {
         
         {selectedInquiry && (
           <DialogContent sx={{ p: 3 }}>
+            {/* 로딩 상태 표시 */}
+            {loading && (
+              <Box sx={{ mb: 3 }}>
+                <Alert severity="info" sx={{ mb: 2 }}>
+                  상세 정보를 불러오는 중...
+                </Alert>
+                <LinearProgress />
+              </Box>
+            )}
+
             <Box sx={{ mb: 3 }}>
               <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#1976d2', mb: 1 }}>
                 {selectedInquiry.title}
@@ -1093,111 +1140,163 @@ export default function OutreachInquiryPage() {
               </Box>
             </Box>
 
-            <Box
-              sx={{
-                display: 'grid',
-                gap: 2,
-                gridTemplateColumns: '120px 1fr 120px 1fr'
-              }}
-            >
-              {/* 요청자명 */}
-              <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: '#666' }}>
-                👤 요청자명:
+            {/* 연락처 정보 섹션 */}
+            <Box sx={{ mb: 4 }}>
+              <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#1976d2', mb: 2 }}>
+                👤 연락처 정보
               </Typography>
-              <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
-                {selectedInquiry.requester_name}
-              </Typography>
-              
-              {/* 연락처 */}
-              <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: '#666' }}>
-                📞 연락처:
-              </Typography>
-              <Typography variant="body1">
-                {selectedInquiry.phone}
-              </Typography>
+              <Box
+                sx={{
+                  display: 'grid',
+                  gap: 2,
+                  gridTemplateColumns: '120px 1fr 120px 1fr'
+                }}
+              >
+                <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: '#666' }}>
+                  👤 요청자명:
+                </Typography>
+                <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
+                  {selectedInquiry.requester_name || '미입력'}
+                </Typography>
+                
+                <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: '#666' }}>
+                  📞 연락처:
+                </Typography>
+                <Typography variant="body1">
+                  {selectedInquiry.phone || '미입력'}
+                </Typography>
 
-              {/* 이메일 */}
-              <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: '#666' }}>
-                📧 이메일:
-              </Typography>
-              <Typography variant="body1">
-                {selectedInquiry.email}
-              </Typography>
+                <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: '#666' }}>
+                  📧 이메일:
+                </Typography>
+                <Typography variant="body1">
+                  {selectedInquiry.email || '미입력'}
+                </Typography>
 
-              {/* 교육 장소 */}
-              <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: '#666' }}>
-                📍 교육 장소:
-              </Typography>
-              <Typography variant="body1">
-                {selectedInquiry.location}
-              </Typography>
+                <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: '#666' }}>
+                  📍 교육 장소:
+                </Typography>
+                <Typography variant="body1">
+                  {selectedInquiry.location || '미정'}
+                </Typography>
+              </Box>
+            </Box>
 
-              {/* 학년 */}
-              <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: '#666' }}>
-                🎓 학년:
+            {/* 교육 정보 섹션 */}
+            <Box sx={{ mb: 4 }}>
+              <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#1976d2', mb: 2 }}>
+                🎓 교육 정보
               </Typography>
-              <Typography variant="body1">
-                {selectedInquiry.student_grade}
-              </Typography>
+              <Box
+                sx={{
+                  display: 'grid',
+                  gap: 2,
+                  gridTemplateColumns: '120px 1fr 120px 1fr'
+                }}
+              >
+                <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: '#666' }}>
+                  📚 교육 과정:
+                </Typography>
+                <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
+                  {selectedInquiry.course_type_display || getCourseTypeName(selectedInquiry.course_type)}
+                </Typography>
 
-              {/* 참여 인원 */}
-              <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: '#666' }}>
-                👥 참여 인원:
-              </Typography>
-              <Typography variant="body1">
-                {selectedInquiry.student_count}명
-              </Typography>
+                <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: '#666' }}>
+                  🎓 학년:
+                </Typography>
+                <Typography variant="body1">
+                  {selectedInquiry.student_grade || '전체'}
+                </Typography>
 
-              {/* 희망 날짜 */}
-              <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: '#666' }}>
-                📅 희망 날짜:
-              </Typography>
-              <Typography variant="body1">
-                {selectedInquiry.preferred_date}
-              </Typography>
+                <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: '#666' }}>
+                  👥 참여 인원:
+                </Typography>
+                <Typography variant="body1">
+                  {selectedInquiry.student_count || 0}명
+                </Typography>
 
-              {/* 희망 시간 */}
-              <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: '#666' }}>
-                🕘 희망 시간:
-              </Typography>
-              <Typography variant="body1">
-                {selectedInquiry.preferred_time}
-              </Typography>
+                {/* 예산 - 값이 있을 때만 표시 */}
+                {selectedInquiry.budget && (
+                  <>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: '#666' }}>
+                      💰 예산:
+                    </Typography>
+                    <Typography variant="body1">
+                      {selectedInquiry.budget.includes('원') 
+                        ? selectedInquiry.budget 
+                        : `${formatNumberWithCommas(selectedInquiry.budget)}원`
+                      }
+                    </Typography>
+                  </>
+                )}
+              </Box>
+            </Box>
 
-              {/* 교육 시간 */}
-              <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: '#666' }}>
-                ⏱️ 교육 시간:
+            {/* 일정 정보 섹션 */}
+            <Box sx={{ mb: 4 }}>
+              <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#1976d2', mb: 2 }}>
+                📅 일정 정보
               </Typography>
-              <Typography variant="body1">
-                {selectedInquiry.duration_display || selectedInquiry.duration}
-              </Typography>
+              <Box
+                sx={{
+                  display: 'grid',
+                  gap: 2,
+                  gridTemplateColumns: '120px 1fr 120px 1fr'
+                }}
+              >
+                <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: '#666' }}>
+                  📅 희망 날짜:
+                </Typography>
+                <Typography variant="body1">
+                  {selectedInquiry.preferred_date 
+                    ? new Date(selectedInquiry.preferred_date).toLocaleDateString('ko-KR', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        weekday: 'short'
+                      })
+                    : '미정'
+                  }
+                </Typography>
 
-              {/* 예산 - 값이 있을 때만 표시 */}
-              {selectedInquiry.budget && (
-                <>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: '#666' }}>
-                    💰 예산:
-                  </Typography>
-                  <Typography variant="body1">
-                    {selectedInquiry.budget.includes('원') 
-                      ? selectedInquiry.budget 
-                      : convertToKoreanCurrency(parseInt(selectedInquiry.budget) || 0)
-                    }
-                  </Typography>
-                </>
-              )}
+                <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: '#666' }}>
+                  🕘 희망 시간:
+                </Typography>
+                <Typography variant="body1">
+                  {selectedInquiry.preferred_time || '미정'}
+                </Typography>
+
+                <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: '#666' }}>
+                  ⏱️ 교육 시간:
+                </Typography>
+                <Typography variant="body1">
+                  {selectedInquiry.duration_display || selectedInquiry.duration || '미정'}
+                </Typography>
+
+                {/* 기타 교육 시간이 있을 때만 표시 */}
+                {selectedInquiry.duration === '기타' && selectedInquiry.duration_custom && (
+                  <>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: '#666' }}>
+                      ⏱️ 상세 시간:
+                    </Typography>
+                    <Typography variant="body1">
+                      {selectedInquiry.duration_custom}
+                    </Typography>
+                  </>
+                )}
+              </Box>
             </Box>
 
             <Divider sx={{ my: 3 }} />
 
             {/* 교육 요청사항 - 전체 너비 */}
             <Box sx={{ mb: 3 }}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: '#666', mb: 1 }}>
-                📝 교육 요청사항:
+              <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#1976d2', mb: 2 }}>
+                📝 교육 요청사항
               </Typography>
-              <Paper sx={{ p: 2, backgroundColor: '#f9f9f9' }}>
+              <Paper sx={{ p: 3, backgroundColor: '#f9f9f9', borderRadius: 2 }}>
                 <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
-                  {selectedInquiry.message}
+                  {selectedInquiry.message || '요청사항이 없습니다.'}
                 </Typography>
               </Paper>
             </Box>
@@ -1205,10 +1304,10 @@ export default function OutreachInquiryPage() {
             {/* 특별 요청사항 - 값이 있을 때만 표시 */}
             {selectedInquiry.special_requests && (
               <Box sx={{ mb: 3 }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: '#666', mb: 1 }}>
-                  ⭐ 특별 요청사항:
+                <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#1976d2', mb: 2 }}>
+                  ⭐ 특별 요청사항
                 </Typography>
-                <Paper sx={{ p: 2, backgroundColor: '#f0f8ff' }}>
+                <Paper sx={{ p: 3, backgroundColor: '#f0f8ff', borderRadius: 2 }}>
                   <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
                     {selectedInquiry.special_requests}
                   </Typography>
@@ -1218,15 +1317,19 @@ export default function OutreachInquiryPage() {
 
             {/* 문의 상태 및 추가 정보 */}
             <Box sx={{ 
-              mt: 3, 
-              p: 2, 
+              mt: 4, 
+              p: 3, 
               backgroundColor: '#f5f5f5', 
-              borderRadius: 1
+              borderRadius: 2,
+              border: '1px solid #e0e0e0'
             }}>
+              <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#1976d2', mb: 2 }}>
+                📊 문의 정보
+              </Typography>
               <Box sx={{ 
                 display: 'grid', 
-                gridTemplateColumns: '100px 1fr 100px 1fr', 
-                gap: 1, 
+                gridTemplateColumns: '120px 1fr 120px 1fr', 
+                gap: 2, 
                 mb: 2 
               }}>
                 <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 'bold' }}>
@@ -1255,8 +1358,8 @@ export default function OutreachInquiryPage() {
               
               <Box sx={{ 
                 display: 'grid', 
-                gridTemplateColumns: '100px 1fr', 
-                gap: 1 
+                gridTemplateColumns: '120px 1fr', 
+                gap: 2 
               }}>
                 <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 'bold' }}>
                   📅 등록일:
@@ -1269,6 +1372,41 @@ export default function OutreachInquiryPage() {
                     weekday: 'short'
                   })}
                 </Typography>
+
+                {/* 수정일이 등록일과 다를 때만 표시 */}
+                {selectedInquiry.updated_at && 
+                 new Date(selectedInquiry.updated_at).getTime() !== new Date(selectedInquiry.created_at).getTime() && (
+                  <>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 'bold' }}>
+                      🔄 수정일:
+                    </Typography>
+                    <Typography variant="body2">
+                      {new Date(selectedInquiry.updated_at).toLocaleDateString('ko-KR', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        weekday: 'short'
+                      })}
+                    </Typography>
+                  </>
+                )}
+
+                {/* 관리자 메모가 있을 때만 표시 */}
+                {selectedInquiry.admin_notes && (
+                  <>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 'bold' }}>
+                      📝 관리자 메모:
+                    </Typography>
+                    <Typography variant="body2" sx={{ 
+                      backgroundColor: '#fff3cd', 
+                      p: 1, 
+                      borderRadius: 1,
+                      border: '1px solid #ffeaa7'
+                    }}>
+                      {selectedInquiry.admin_notes}
+                    </Typography>
+                  </>
+                )}
               </Box>
             </Box>
           </DialogContent>
