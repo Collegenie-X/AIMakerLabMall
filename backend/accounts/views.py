@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import IsAuthenticated
-from .serializers import LoginSerializer
+from .serializers import LoginSerializer, UserProfileSerializer
 from .models import EmailVerificationToken
 import os
 import requests
@@ -14,6 +14,30 @@ from google.auth.transport import requests as google_requests
 from firebase_admin import auth
 
 User = get_user_model()
+
+
+class UserProfileView(APIView):
+    """
+    사용자 프로필 조회 API
+    JWT 토큰을 통해 현재 로그인한 사용자 정보를 반환합니다.
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        """
+        현재 로그인한 사용자 정보 조회
+        """
+        try:
+            serializer = UserProfileSerializer(request.user)
+            return Response({
+                'status': 'success',
+                'user': serializer.data
+            })
+        except Exception as e:
+            return Response(
+                {'error': f'사용자 정보 조회 중 오류가 발생했습니다: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 class LoginView(APIView):

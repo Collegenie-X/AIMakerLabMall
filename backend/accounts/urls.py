@@ -7,6 +7,7 @@ from .views import (
     VerifyEmailView,
     KakaoCallbackView,
     GoogleCallbackView,
+    UserProfileView,
 )
 
 urlpatterns = [
@@ -17,4 +18,5 @@ urlpatterns = [
     path("token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("kakao/callback/", KakaoCallbackView.as_view(), name="kakao-callback"),
     path("google/login/", GoogleCallbackView.as_view(), name="google-callback"),
+    path("profile/", UserProfileView.as_view(), name="user-profile"),
 ]

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Container,
@@ -81,6 +81,8 @@ import {
   enrollInClass, 
   type ClassEnrollmentData 
 } from '@/services/outreachInquiryService';
+import LoginDialog from '@/components/layout/Header/LoginDialog';
+import axios from 'axios';
 
 /**
  * 수업 차시 정보 타입
@@ -206,17 +208,15 @@ export default function EducationSchedulePage() {
   });
   const [bookmarkedItems, setBookmarkedItems] = useState<Set<string>>(new Set());
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
-  const [videoDialog, setVideoDialog] = useState(false);
-  const [selectedVideo, setSelectedVideo] = useState<string>('');
+  const [curriculumVideoDialog, setCurriculumVideoDialog] = useState(false);
+  const [selectedCurriculumVideo, setSelectedCurriculumVideo] = useState<string>('');
+  const [selectedLessonTitle, setSelectedLessonTitle] = useState<string>('');
   const [reviewDialog, setReviewDialog] = useState(false);
   const [newReview, setNewReview] = useState({
     rating: 0,
     comment: ''
   });
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [curriculumVideoDialog, setCurriculumVideoDialog] = useState(false);
-  const [selectedCurriculumVideo, setSelectedCurriculumVideo] = useState<string>('');
-  const [selectedLessonTitle, setSelectedLessonTitle] = useState<string>('');
 
   // 추가 상태 관리
   const [submitting, setSubmitting] = useState(false);
@@ -225,6 +225,209 @@ export default function EducationSchedulePage() {
     message: '',
     severity: 'success' as 'success' | 'error' | 'info' | 'warning'
   });
+
+  // 로그인 다이얼로그 상태 관리
+  const [openLoginDialog, setOpenLoginDialog] = useState(false);
+  const [loginData, setLoginData] = useState({
+    email: '',
+    password: ''
+  });
+  const [loginError, setLoginError] = useState('');
+
+  /**
+   * 프론트엔드 로그인 상태 확인 함수
+   * localStorage의 토큰을 확인하여 로그인 상태를 판단합니다.
+   */
+  const checkLocalAuthStatus = (): { isAuthenticated: boolean; user: any | null } => {
+    if (typeof window === 'undefined') {
+      return { isAuthenticated: false, user: null };
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      const user = localStorage.getItem('user');
+      
+      if (!token || !user) {
+        return { isAuthenticated: false, user: null };
+      }
+
+      // 간단한 토큰 만료 체크 (JWT 토큰의 경우)
+      const tokenParts = token.split('.');
+      if (tokenParts.length === 3) {
+        try {
+          const payload = JSON.parse(atob(tokenParts[1]));
+          const currentTime = Math.floor(Date.now() / 1000);
+          
+          if (payload.exp && payload.exp < currentTime) {
+            // 토큰이 만료됨
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            return { isAuthenticated: false, user: null };
+          }
+        } catch (e) {
+          // JWT 파싱 실패 시 기본 체크만 수행
+          console.warn('JWT 파싱 실패, 기본 인증 체크 수행');
+        }
+      }
+
+      return { 
+        isAuthenticated: true, 
+        user: { name: user, email: user } 
+      };
+    } catch (error) {
+      console.error('로그인 상태 확인 중 오류:', error);
+      return { isAuthenticated: false, user: null };
+    }
+  };
+
+  /**
+   * 로그인 입력 필드 변경 핸들러
+   */
+  const handleLoginInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setLoginData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  /**
+   * 로그인 처리 함수
+   */
+  const handleLogin = async () => {
+    try {
+      console.log('로그인 시도:', { email: loginData.email });
+      
+      const response = await axios.post('http://localhost:8000/api/v1/auth/login/', {
+        email: loginData.email,
+        password: loginData.password
+      });
+
+      console.log('로그인 응답:', response.data);
+
+      if (response.status === 200 && response.data) {
+        // 토큰 저장
+        localStorage.setItem("token", response.data.tokens.access);
+        localStorage.setItem("refresh_token", response.data.tokens.refresh);
+        
+        // 사용자 정보 저장
+        const userName = response.data.user.name || response.data.user.username || response.data.user.email;
+        localStorage.setItem("user", userName);
+        
+        console.log('로그인 성공, 사용자:', userName);
+        handleLoginClose();
+        
+        // 로그인 성공 후 바로 수업 신청 진행
+        showMessage('✅ 로그인 성공! 수업 신청을 진행합니다.', 'success');
+        
+        // 1초 후 수업 신청 처리 (로그인 상태 확인 단계 건너뛰고 바로 신청)
+        setTimeout(async () => {
+          await proceedWithRegistration();
+        }, 1000);
+      }
+    } catch (err: any) {
+      console.error('로그인 에러 상세:', err);
+      console.error('에러 응답:', err.response?.data);
+      
+      let errorMessage = '로그인에 실패했습니다.';
+      if (err.response?.data?.detail) {
+        errorMessage = err.response.data.detail;
+      } else if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      }
+      
+      setLoginError(errorMessage);
+    }
+  };
+
+  /**
+   * 로그인 후 수업 신청 진행 함수
+   */
+  const proceedWithRegistration = async () => {
+    if (!selectedSchedule) {
+      showMessage('선택된 수업이 없습니다.', 'error');
+      return;
+    }
+
+    // 1단계: 입력값 검증
+    if (!registrationInfo.studentName || !registrationInfo.phone || !registrationInfo.email) {
+      showMessage('모든 필수 정보를 입력해주세요.', 'error');
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      console.log(`📝 수업 신청 시작: ${selectedSchedule.title}`);
+
+      // 2단계: API 데이터 형식 변환
+      const enrollmentData: ClassEnrollmentData = {
+        class_id: parseInt(selectedSchedule.id),
+        requester_name: registrationInfo.studentName,
+        phone: registrationInfo.phone,
+        email: registrationInfo.email,
+        student_count: registrationInfo.outreachInfo?.studentCount || 1,
+        message: `[수업신청] ${selectedSchedule.title}`,
+        special_requests: registrationInfo.outreachInfo?.specialRequests || ''
+      };
+
+      console.log('📤 API 호출 데이터:', enrollmentData);
+
+      // 3단계: 백엔드 API 호출
+      const response = await enrollInClass(enrollmentData);
+      console.log('✅ 수업 신청 성공:', response);
+
+      // 4단계: 성공 처리
+      setScheduleData(prev => 
+        prev.map(item => 
+          item.id === selectedSchedule.id 
+            ? { ...item, registrationStatus: '신청완료', participants: item.participants + 1 }
+            : item
+        )
+      );
+
+      // 5단계: 성공 메시지 표시
+      showMessage('🎉 수강 신청이 완료되었습니다! 3초 후 문의 내역을 확인할 수 있습니다.', 'success');
+      
+      // 6단계: 다이얼로그 닫기
+      handleRegistrationClose();
+      
+      // 7단계: 3초 후 자동으로 /inquiry/contact 페이지로 이동
+      setTimeout(() => {
+        console.log('📍 문의 내역 페이지로 이동합니다...');
+        router.push('/inquiry/contact');
+      }, 3000);
+
+      console.log('✅ 수업 신청 처리 완료');
+
+    } catch (error: any) {
+      console.error('❌ 수업 신청 중 오류:', error);
+      
+      const errorMessage = error.response?.data?.message || 
+                          error.message || 
+                          '수업 신청 중 오류가 발생했습니다.';
+      
+      showMessage(`❌ ${errorMessage}`, 'error');
+      
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  /**
+   * 로그인 다이얼로그 닫기
+   */
+  const handleLoginClose = () => {
+    setOpenLoginDialog(false);
+    setLoginData({ email: '', password: '' });
+    setLoginError('');
+  };
+
+  /**
+   * 회원가입 클릭 핸들러 (임시)
+   */
+  const handleRegisterClick = () => {
+    showMessage('회원가입 기능은 헤더의 로그인 버튼을 이용해주세요.', 'info');
+  };
 
   /**
    * 샘플 교육 일정 데이터 (실제 이미지 및 추가 정보 포함)
@@ -602,7 +805,7 @@ export default function EducationSchedulePage() {
       level: '중급',
       category: '프로그래밍',
       status: '예정',
-      classType: '직접출강',
+      classType: '직접 출강',
       description: 'Python 프로그래밍 언어의 기초부터 실전 프로젝트까지 학습합니다.',
       registrationStatus: '미신청',
       price: 200000,
@@ -936,19 +1139,19 @@ export default function EducationSchedulePage() {
   };
 
   /**
-   * 신청 정보 업데이트
+   * 신청 정보 업데이트 - 성능 최적화
    */
-  const handleRegistrationInfoChange = (field: string, value: any) => {
+  const handleRegistrationInfoChange = useCallback((field: string, value: any) => {
     setRegistrationInfo(prev => ({
       ...prev,
       [field]: value
     }));
-  };
+  }, []);
 
   /**
-   * 출강 정보 업데이트
+   * 출강 정보 업데이트 - 성능 최적화
    */
-  const handleOutreachInfoChange = (field: string, value: any) => {
+  const handleOutreachInfoChange = useCallback((field: string, value: any) => {
     setRegistrationInfo(prev => ({
       ...prev,
       outreachInfo: {
@@ -956,7 +1159,7 @@ export default function EducationSchedulePage() {
         [field]: value
       }
     }));
-  };
+  }, []);
 
   /**
    * 팝업 메시지 표시 함수
@@ -974,144 +1177,6 @@ export default function EducationSchedulePage() {
    */
   const handleSnackbarClose = () => {
     setSnackbar(prev => ({ ...prev, open: false }));
-  };
-
-  /**
-   * 신청 처리 - 실제 API 호출로 DB에 저장
-   * 함수형 모듈형 구조로 순차적 처리 구현
-   */
-  const handleRegistrationSubmit = async () => {
-    if (!selectedSchedule) {
-      showMessage('선택된 수업이 없습니다.', 'error');
-      return;
-    }
-
-    // 1단계: 입력값 검증
-    if (!registrationInfo.studentName || !registrationInfo.phone || !registrationInfo.email) {
-      showMessage('모든 필수 정보를 입력해주세요.', 'error');
-      return;
-    }
-
-    try {
-      setSubmitting(true);
-      console.log(`📝 수업 신청 시작: ${selectedSchedule.title}`);
-
-      // 2단계: API 데이터 형식 변환
-      const enrollmentData: ClassEnrollmentData = {
-        class_id: parseInt(selectedSchedule.id),
-        requester_name: registrationInfo.studentName,
-        phone: registrationInfo.phone,
-        email: registrationInfo.email,
-        student_count: registrationInfo.outreachInfo?.studentCount || 1,
-        message: `[수업신청] ${selectedSchedule.title}`,
-        special_requests: registrationInfo.outreachInfo?.specialRequests || ''
-      };
-
-      console.log('📤 API 호출 데이터:', enrollmentData);
-
-      // 3단계: 백엔드 API 호출
-      const response = await enrollInClass(enrollmentData);
-      console.log('✅ 수업 신청 성공:', response);
-
-      // 4단계: 성공 처리
-      setScheduleData(prev => 
-        prev.map(item => 
-          item.id === selectedSchedule.id 
-            ? { ...item, registrationStatus: '신청완료', participants: item.participants + 1 }
-            : item
-        )
-      );
-
-      // 5단계: 성공 메시지 표시
-      showMessage('🎉 수강 신청이 완료되었습니다! 3초 후 문의 내역을 확인할 수 있습니다.', 'success');
-      
-      // 6단계: 다이얼로그 닫기
-      handleRegistrationClose();
-      
-      // 7단계: 3초 후 자동으로 /inquiry/contact 페이지로 이동
-      setTimeout(() => {
-        console.log('📍 문의 내역 페이지로 이동합니다...');
-        router.push('/inquiry/contact');
-      }, 3000);
-
-      console.log('✅ 수업 신청 처리 완료');
-
-    } catch (error: any) {
-      console.error('❌ 수업 신청 중 오류:', error);
-      
-      const errorMessage = error.response?.data?.message || 
-                          error.message || 
-                          '수업 신청 중 오류가 발생했습니다.';
-      
-      showMessage(`❌ ${errorMessage}`, 'error');
-      
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  /**
-   * 동영상 다이얼로그 열기
-   */
-  const handleVideoOpen = (videoUrl: string) => {
-    setSelectedVideo(videoUrl);
-    setVideoDialog(true);
-  };
-
-  /**
-   * 동영상 다이얼로그 닫기
-   */
-  const handleVideoClose = () => {
-    setVideoDialog(false);
-    setSelectedVideo('');
-  };
-
-  /**
-   * 할인 가격 계산
-   */
-  const calculateDiscountPrice = (schedule: EducationSchedule): { originalPrice: number; discountedPrice: number; bestDiscount: DiscountInfo | null } => {
-    const activeDiscounts = schedule.discounts?.filter(d => d.isActive) || [];
-    if (activeDiscounts.length === 0) {
-      return { originalPrice: schedule.price, discountedPrice: schedule.price, bestDiscount: null };
-    }
-
-    const bestDiscount = activeDiscounts.reduce((best, current) => 
-      current.discountRate > best.discountRate ? current : best
-    );
-
-    const discountedPrice = schedule.price * (1 - bestDiscount.discountRate / 100);
-    return { originalPrice: schedule.price, discountedPrice, bestDiscount };
-  };
-
-  /**
-   * 난이도별 색상 반환
-   */
-  const getLevelGuideColor = (level: string) => {
-    switch (level) {
-      case '초급': return '#4caf50';
-      case '중급': return '#ff9800';
-      case '고급': return '#f44336';
-      default: return '#9e9e9e';
-    }
-  };
-
-  /**
-   * 수업 형태 변경 핸들러
-   */
-  const handleClassFormatChange = (format: '오프라인' | '직접 출강') => {
-    setRegistrationInfo(prev => ({
-      ...prev,
-      classFormat: format,
-      outreachInfo: format === '직접 출강' ? {
-        studentCount: 20,
-        studentGrade: '초등 3-4학년',
-        duration: '2시간',
-        equipment: [],
-        specialRequests: '',
-        preferredDate: '',
-        preferredTime: ''
-      } : undefined
-    }));
   };
 
   /**
@@ -1217,6 +1282,73 @@ export default function EducationSchedulePage() {
    */
   const handleMoveToContact = () => {
     router.push('/inquiry/contact');
+  };
+
+  /**
+   * 신청 처리 - 실제 API 호출로 DB에 저장
+   * 함수형 모듈형 구조로 순차적 처리 구현
+   */
+  const handleRegistrationSubmit = async () => {
+    if (!selectedSchedule) {
+      showMessage('선택된 수업이 없습니다.', 'error');
+      return;
+    }
+
+    // 0단계: 로그인 상태 확인
+    console.log('🔐 로그인 상태 확인 중...');
+    try {
+      const authStatus = checkLocalAuthStatus();
+      if (!authStatus.isAuthenticated) {
+        showMessage('🔒 로그인이 필요합니다. 로그인을 진행해주세요.', 'warning');
+        setOpenLoginDialog(true);
+        return;
+      }
+      console.log('✅ 로그인 확인 완료:', authStatus.user?.email);
+    } catch (error) {
+      console.error('❌ 로그인 상태 확인 중 오류:', error);
+      showMessage('🔒 로그인 상태 확인에 실패했습니다. 로그인을 진행해주세요.', 'error');
+      setOpenLoginDialog(true);
+      return;
+    }
+
+    // 로그인이 되어있다면 바로 수업 신청 진행
+    await proceedWithRegistration();
+  };
+
+  /**
+   * 할인 가격 계산
+   */
+  const calculateDiscountPrice = (schedule: EducationSchedule): { originalPrice: number; discountedPrice: number; bestDiscount: DiscountInfo | null } => {
+    const activeDiscounts = schedule.discounts?.filter(d => d.isActive) || [];
+    if (activeDiscounts.length === 0) {
+      return { originalPrice: schedule.price, discountedPrice: schedule.price, bestDiscount: null };
+    }
+
+    const bestDiscount = activeDiscounts.reduce((best, current) => 
+      current.discountRate > best.discountRate ? current : best
+    );
+
+    const discountedPrice = schedule.price * (1 - bestDiscount.discountRate / 100);
+    return { originalPrice: schedule.price, discountedPrice, bestDiscount };
+  };
+
+  /**
+   * 수업 형태 변경 핸들러
+   */
+  const handleClassFormatChange = (format: '오프라인' | '직접 출강') => {
+    setRegistrationInfo(prev => ({
+      ...prev,
+      classFormat: format,
+      outreachInfo: format === '직접 출강' ? {
+        studentCount: 20,
+        studentGrade: '초등 3-4학년',
+        duration: '2시간',
+        equipment: [],
+        specialRequests: '',
+        preferredDate: '',
+        preferredTime: ''
+      } : undefined
+    }));
   };
 
   return (
@@ -1471,7 +1603,7 @@ export default function EducationSchedulePage() {
                       />
                     )}
                     
-                    {/* 동영상 미리보기 호버 오버레이 */}
+                    {/* 동영상 미리보기 호버 오버레이 - 카드 클릭으로만 상세보기 */}
                     {schedule.videoUrl && (
                       <Box
                         sx={{
@@ -1490,15 +1622,11 @@ export default function EducationSchedulePage() {
                             opacity: 1
                           }
                         }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleVideoOpen(schedule.videoUrl!);
-                        }}
                       >
                         <Box sx={{ textAlign: 'center', color: 'white' }}>
                           <PlayArrow sx={{ fontSize: 40, mb: 1 }} />
                           <Typography variant="caption" sx={{ fontWeight: 'bold' }}>
-                            미리보기
+                            클릭하여 상세보기
                           </Typography>
                         </Box>
                       </Box>
@@ -1914,36 +2042,8 @@ export default function EducationSchedulePage() {
                 </Box>
               </Box>
               
-              {/* 메인 동영상 재생 버튼 */}
-              {selectedSchedule.videoUrl && (
-                <Box
-                  sx={{
-                    position: 'absolute',
-                    top: '50%',
-                    left: '50%',
-                    transform: 'translate(-50%, -50%)',
-                    zIndex: 10
-                  }}
-                >
-                  <IconButton
-                    onClick={() => handleVideoOpen(selectedSchedule.videoUrl!)}
-                    sx={{
-                      backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                      color: '#1976d2',
-                      p: 3,
-                      '&:hover': {
-                        backgroundColor: 'white',
-                        transform: 'scale(1.1)'
-                      },
-                      transition: 'all 0.3s ease',
-                      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)'
-                    }}
-                  >
-                    <PlayArrow sx={{ fontSize: 48 }} />
-                  </IconButton>
-                </Box>
-              )}
-
+              {/* 메인 동영상 재생 버튼 - 제거됨 */}
+              
               {/* 평점 표시 */}
               {selectedSchedule.averageRating && (
                 <Box
@@ -1995,302 +2095,298 @@ export default function EducationSchedulePage() {
           <DialogContent sx={{ p: 0 }}>
             {selectedSchedule && (
               <>
-                <Grid container sx={{ minHeight: '400px' }}>
+                <Box sx={{ display: 'flex', minHeight: '400px' }}>
                   {/* 좌측: 신청자 정보 */}
-                  <Grid item xs={12} md={5}>
-                    <Box sx={{ p: 3, backgroundColor: '#f8f9fa', height: '100%' }}>
-                      <Typography variant="h6" gutterBottom sx={{ 
-                        fontWeight: 'bold',
-                        display: 'flex',
-                        alignItems: 'center',
-                        mb: 3
-                      }}>
-                        <PersonAdd sx={{ mr: 1, color: '#1976d2' }} />
-                        신청자 정보
-                      </Typography>
+                  <Box sx={{ width: '40%', p: 3, backgroundColor: '#f8f9fa' }}>
+                    <Typography variant="h6" gutterBottom sx={{ 
+                      fontWeight: 'bold',
+                      display: 'flex',
+                      alignItems: 'center',
+                      mb: 3
+                    }}>
+                      <PersonAdd sx={{ mr: 1, color: '#1976d2' }} />
+                      신청자 정보
+                    </Typography>
+                    
+                    <Stack spacing={3}>
+                      <TextField
+                        label="실명"
+                        value={registrationInfo.studentName}
+                        onChange={(e) => handleRegistrationInfoChange('studentName', e.target.value)}
+                        fullWidth
+                        required
+                        variant="outlined"
+                        size="medium"
+                        placeholder="홍길동"
+                      />
+                      <TextField
+                        label="연락받을 전화번호"
+                        value={registrationInfo.phone}
+                        onChange={(e) => handleRegistrationInfoChange('phone', e.target.value)}
+                        fullWidth
+                        required
+                        placeholder="010-1234-5678"
+                        variant="outlined"
+                        size="medium"
+                      />
+                      <TextField
+                        label="연락받을 이메일"
+                        type="email"
+                        value={registrationInfo.email}
+                        onChange={(e) => handleRegistrationInfoChange('email', e.target.value)}
+                        fullWidth
+                        required
+                        placeholder="example@email.com"
+                        variant="outlined"
+                        size="medium"
+                      />
                       
-                      <Stack spacing={3}>
-                        <TextField
-                          label="실명"
-                          value={registrationInfo.studentName}
-                          onChange={(e) => handleRegistrationInfoChange('studentName', e.target.value)}
-                          fullWidth
-                          required
-                          variant="outlined"
+                      <FormControl fullWidth>
+                        <InputLabel>수업 형태</InputLabel>
+                        <Select
+                          value={registrationInfo.classFormat}
+                          onChange={(e) => handleClassFormatChange(e.target.value as '오프라인' | '직접 출강')}
+                          label="수업 형태"
                           size="medium"
-                          placeholder="홍길동"
-                        />
-                        <TextField
-                          label="연락받을 전화번호"
-                          value={registrationInfo.phone}
-                          onChange={(e) => handleRegistrationInfoChange('phone', e.target.value)}
-                          fullWidth
-                          required
-                          placeholder="010-1234-5678"
-                          variant="outlined"
-                          size="medium"
-                        />
-                        <TextField
-                          label="연락받을 이메일"
-                          type="email"
-                          value={registrationInfo.email}
-                          onChange={(e) => handleRegistrationInfoChange('email', e.target.value)}
-                          fullWidth
-                          required
-                          placeholder="example@email.com"
-                          variant="outlined"
-                          size="medium"
-                        />
-                        
-                        <FormControl fullWidth>
-                          <InputLabel>수업 형태</InputLabel>
-                          <Select
-                            value={registrationInfo.classFormat}
-                            onChange={(e) => handleClassFormatChange(e.target.value as '오프라인' | '직접 출강')}
-                            label="수업 형태"
-                            size="medium"
-                          >
-                            <MenuItem value="오프라인">
-                              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                <LocationOn sx={{ mr: 1, color: '#4caf50' }} />
-                                오프라인 수업 (본원 방문)
-                              </Box>
-                            </MenuItem>
-                            <MenuItem value="직접 출강">
-                              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                <DirectionsCar sx={{ mr: 1, color: '#9c27b0' }} />
-                                직접 출강 (강사 파견)
-                              </Box>
-                            </MenuItem>
-                          </Select>
-                        </FormControl>
+                        >
+                          <MenuItem value="오프라인">
+                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                              <LocationOn sx={{ mr: 1, color: '#4caf50' }} />
+                              오프라인 수업 (본원 방문)
+                            </Box>
+                          </MenuItem>
+                          <MenuItem value="직접 출강">
+                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                              <DirectionsCar sx={{ mr: 1, color: '#9c27b0' }} />
+                              직접 출강 (강사 파견)
+                            </Box>
+                          </MenuItem>
+                        </Select>
+                      </FormControl>
 
-                        {/* 출강 수업 추가 정보 */}
-                        {registrationInfo.classFormat === '직접 출강' && (
-                          <Paper sx={{ p: 3, backgroundColor: '#fff3e0', borderRadius: 2, border: '2px solid #ffb74d' }}>
-                            <Typography variant="subtitle1" gutterBottom sx={{ 
-                              fontWeight: 'bold',
-                              display: 'flex',
-                              alignItems: 'center',
-                              mb: 2,
-                              color: '#e65100'
-                            }}>
-                              <DirectionsCar sx={{ mr: 1 }} />
-                              출강 수업 추가 정보
-                            </Typography>
-                            <Stack spacing={2}>
-                              <TextField
-                                label="학생 수"
-                                type="number"
-                                value={registrationInfo.outreachInfo?.studentCount || ''}
-                                onChange={(e) => handleOutreachInfoChange('studentCount', parseInt(e.target.value))}
-                                fullWidth
-                                required
-                                inputProps={{ min: 1, max: 50 }}
-                                helperText="최소 1명, 최대 50명"
-                                size="small"
-                              />
-                              <FormControl fullWidth required size="small">
-                                <InputLabel>학년/연령대</InputLabel>
-                                <Select
-                                  value={registrationInfo.outreachInfo?.studentGrade || ''}
-                                  onChange={(e) => handleOutreachInfoChange('studentGrade', e.target.value)}
-                                  label="학년/연령대"
-                                >
-                                  {gradeOptions.map((grade) => (
-                                    <MenuItem key={grade} value={grade}>{grade}</MenuItem>
-                                  ))}
-                                </Select>
-                              </FormControl>
-                              <TextField
-                                label="희망 수업 시간"
-                                value={registrationInfo.outreachInfo?.duration || ''}
-                                onChange={(e) => handleOutreachInfoChange('duration', e.target.value)}
-                                fullWidth
-                                required
-                                placeholder="예: 2시간, 4시간"
-                                size="small"
-                              />
-                              <TextField
-                                label="특별 요청사항"
-                                multiline
-                                rows={2}
-                                value={registrationInfo.outreachInfo?.specialRequests || ''}
-                                onChange={(e) => handleOutreachInfoChange('specialRequests', e.target.value)}
-                                fullWidth
-                                placeholder="추가 요청사항이 있으시면 입력해주세요"
-                                size="small"
-                              />
-                            </Stack>
-                          </Paper>
-                        )}
-                      </Stack>
-                    </Box>
-                  </Grid>
+                      {/* 출강 수업 추가 정보 */}
+                      {registrationInfo.classFormat === '직접 출강' && (
+                        <Paper sx={{ p: 3, backgroundColor: '#fff3e0', borderRadius: 2, border: '2px solid #ffb74d' }}>
+                          <Typography variant="subtitle1" gutterBottom sx={{ 
+                            fontWeight: 'bold',
+                            display: 'flex',
+                            alignItems: 'center',
+                            mb: 2,
+                            color: '#e65100'
+                          }}>
+                            <DirectionsCar sx={{ mr: 1 }} />
+                            출강 수업 추가 정보
+                          </Typography>
+                          <Stack spacing={2}>
+                            <TextField
+                              label="학생 수"
+                              type="number"
+                              value={registrationInfo.outreachInfo?.studentCount || ''}
+                              onChange={(e) => handleOutreachInfoChange('studentCount', parseInt(e.target.value))}
+                              fullWidth
+                              required
+                              inputProps={{ min: 1, max: 50 }}
+                              helperText="최소 1명, 최대 50명"
+                              size="small"
+                            />
+                            <FormControl fullWidth required size="small">
+                              <InputLabel>학년/연령대</InputLabel>
+                              <Select
+                                value={registrationInfo.outreachInfo?.studentGrade || ''}
+                                onChange={(e) => handleOutreachInfoChange('studentGrade', e.target.value)}
+                                label="학년/연령대"
+                              >
+                                {gradeOptions.map((grade) => (
+                                  <MenuItem key={grade} value={grade}>{grade}</MenuItem>
+                                ))}
+                              </Select>
+                            </FormControl>
+                            <TextField
+                              label="희망 수업 시간"
+                              value={registrationInfo.outreachInfo?.duration || ''}
+                              onChange={(e) => handleOutreachInfoChange('duration', e.target.value)}
+                              fullWidth
+                              required
+                              placeholder="예: 2시간, 4시간"
+                              size="small"
+                            />
+                            <TextField
+                              label="특별 요청사항"
+                              multiline
+                              rows={2}
+                              value={registrationInfo.outreachInfo?.specialRequests || ''}
+                              onChange={(e) => handleOutreachInfoChange('specialRequests', e.target.value)}
+                              fullWidth
+                              placeholder="추가 요청사항이 있으시면 입력해주세요"
+                              size="small"
+                            />
+                          </Stack>
+                        </Paper>
+                      )}
+                    </Stack>
+                  </Box>
 
                   {/* 우측: 교육 상세 정보 */}
-                  <Grid item xs={12} md={7}>
-                    <Box sx={{ p: 3, height: '100%', overflow: 'auto' }}>
-                      <Typography variant="h6" gutterBottom sx={{ 
-                        fontWeight: 'bold',
-                        display: 'flex',
-                        alignItems: 'center',
-                        mb: 3,
-                        color: '#6a1b9a'
-                      }}>
-                        <School sx={{ mr: 1 }} />
-                        교육 상세 정보
-                      </Typography>
+                  <Box sx={{ width: '60%', p: 3, overflow: 'auto' }}>
+                    <Typography variant="h6" gutterBottom sx={{ 
+                      fontWeight: 'bold',
+                      display: 'flex',
+                      alignItems: 'center',
+                      mb: 3,
+                      color: '#6a1b9a'
+                    }}>
+                      <School sx={{ mr: 1 }} />
+                      교육 상세 정보
+                    </Typography>
 
-                      {/* 기본 교육 정보 */}
-                      <Paper sx={{ p: 2, mb: 3, backgroundColor: '#f3e5f5', borderRadius: 2 }}>
-                        <Grid container spacing={2}>
-                          <Grid item xs={6}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                              <CalendarMonth sx={{ color: '#1976d2', fontSize: 18 }} />
-                              <Typography variant="body2">
-                                <strong>일시:</strong> {new Date(selectedSchedule.date).toLocaleDateString('ko-KR')} {selectedSchedule.time}
-                              </Typography>
-                            </Box>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                              <AccessTime sx={{ color: '#1976d2', fontSize: 18 }} />
-                              <Typography variant="body2">
-                                <strong>시간:</strong> {selectedSchedule.duration}
-                              </Typography>
-                            </Box>
-                          </Grid>
-                          <Grid item xs={6}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                              <School sx={{ color: '#1976d2', fontSize: 18 }} />
-                              <Typography variant="body2">
-                                <strong>강사:</strong> {selectedSchedule.instructor}
-                              </Typography>
-                            </Box>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                              <Place sx={{ color: '#1976d2', fontSize: 18 }} />
-                              <Typography variant="body2">
-                                <strong>장소:</strong> {selectedSchedule.location}
-                              </Typography>
-                            </Box>
-                          </Grid>
-                        </Grid>
-                      </Paper>
-
-                      {/* 수강료 정보 */}
-                      <Paper sx={{ p: 2, mb: 3, backgroundColor: '#e8f5e8', borderRadius: 2 }}>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>
-                          💰 수강료
-                        </Typography>
-                        {(() => {
-                          const { originalPrice, discountedPrice, bestDiscount } = calculateDiscountPrice(selectedSchedule);
-                          return bestDiscount ? (
-                            <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
-                              <Typography 
-                                variant="body2" 
-                                sx={{ textDecoration: 'line-through', color: 'text.secondary' }}
-                              >
-                                ₩ {originalPrice.toLocaleString()}
-                              </Typography>
-                              <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#f44336' }}>
-                                ₩ {Math.round(discountedPrice).toLocaleString()}
-                              </Typography>
-                              <Chip
-                                label={`${bestDiscount.discountRate}% 할인!`}
-                                size="small"
-                                color="error"
-                                variant="filled"
-                              />
-                            </Stack>
-                          ) : (
-                            <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
-                              ₩ {selectedSchedule.price.toLocaleString()}
+                    {/* 기본 교육 정보 */}
+                    <Paper sx={{ p: 2, mb: 3, backgroundColor: '#f3e5f5', borderRadius: 2 }}>
+                      <Box sx={{ display: 'flex', gap: 2 }}>
+                        <Box sx={{ flex: 1 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                            <CalendarMonth sx={{ color: '#1976d2', fontSize: 18 }} />
+                            <Typography variant="body2">
+                              <strong>일시:</strong> {new Date(selectedSchedule.date).toLocaleDateString('ko-KR')} {selectedSchedule.time}
                             </Typography>
-                          );
-                        })()}
-                      </Paper>
-
-                      {/* 차시별 교육 커리큘럼 */}
-                      <Paper sx={{ p: 2, mb: 3, backgroundColor: '#fff3e0', borderRadius: 2 }}>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 2, display: 'flex', alignItems: 'center' }}>
-                          <MenuBook sx={{ fontSize: 18, mr: 1, color: '#ff9800' }} />
-                          차시별 교육 커리큘럼
-                        </Typography>
-                        {selectedSchedule.lessonPlans.map((lesson, index) => (
-                          <Box key={index} sx={{ mb: 2, p: 2, backgroundColor: 'white', borderRadius: 1, border: '1px solid #ffcc02' }}>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
-                              <Box sx={{ flex: 1 }}>
-                                <Typography variant="body2" sx={{ fontWeight: 'bold', color: '#e65100', mb: 1 }}>
-                                  {lesson.session}차시: {lesson.title} ({lesson.duration})
-                                </Typography>
-                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                                  {lesson.objectives.map((objective, objIndex) => (
-                                    <Chip
-                                      key={objIndex}
-                                      label={objective}
-                                      size="small"
-                                      variant="outlined"
-                                      color="warning"
-                                      sx={{ fontSize: '0.7rem', height: 20 }}
-                                    />
-                                  ))}
-                                </Box>
-                              </Box>
-                              
-                              {/* 미리보기 버튼 */}
-                              {lesson.previewVideoUrl && (
-                                <Button
-                                  size="small"
-                                  variant="outlined"
-                                  startIcon={<PlayCircleOutline />}
-                                  onClick={() => handleCurriculumVideoOpen(lesson.previewVideoUrl!, lesson.title)}
-                                  sx={{
-                                    ml: 2,
-                                    borderColor: '#ff9800',
-                                    color: '#ff9800',
-                                    fontWeight: 'bold',
-                                    fontSize: '0.75rem',
-                                    minWidth: 'auto',
-                                    px: 1.5,
-                                    py: 0.5,
-                                    '&:hover': {
-                                      backgroundColor: '#fff3e0',
-                                      borderColor: '#f57c00',
-                                      color: '#f57c00',
-                                      transform: 'scale(1.05)'
-                                    },
-                                    transition: 'all 0.2s ease'
-                                  }}
-                                >
-                                  미리보기
-                                </Button>
-                              )}
-                            </Box>
                           </Box>
-                        ))}
-                      </Paper>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                            <AccessTime sx={{ color: '#1976d2', fontSize: 18 }} />
+                            <Typography variant="body2">
+                              <strong>시간:</strong> {selectedSchedule.duration}
+                            </Typography>
+                          </Box>
+                        </Box>
+                        <Box sx={{ flex: 1 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                            <School sx={{ color: '#1976d2', fontSize: 18 }} />
+                            <Typography variant="body2">
+                              <strong>강사:</strong> {selectedSchedule.instructor}
+                            </Typography>
+                          </Box>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                            <Place sx={{ color: '#1976d2', fontSize: 18 }} />
+                            <Typography variant="body2">
+                              <strong>장소:</strong> {selectedSchedule.location}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      </Box>
+                    </Paper>
 
-                      {/* 준비 교구재 */}
-                      <Paper sx={{ p: 2, backgroundColor: '#e3f2fd', borderRadius: 2 }}>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1, display: 'flex', alignItems: 'center' }}>
-                          <Build sx={{ fontSize: 18, mr: 1, color: '#1976d2' }} />
-                          준비 교구재
-                        </Typography>
-                        <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                          {selectedSchedule.equipment?.map((item, index) => (
+                    {/* 수강료 정보 */}
+                    <Paper sx={{ p: 2, mb: 3, backgroundColor: '#e8f5e8', borderRadius: 2 }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>
+                        💰 수강료
+                      </Typography>
+                      {(() => {
+                        const { originalPrice, discountedPrice, bestDiscount } = calculateDiscountPrice(selectedSchedule);
+                        return bestDiscount ? (
+                          <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
+                            <Typography 
+                              variant="body2" 
+                              sx={{ textDecoration: 'line-through', color: 'text.secondary' }}
+                            >
+                              ₩ {originalPrice.toLocaleString()}
+                            </Typography>
+                            <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#f44336' }}>
+                              ₩ {Math.round(discountedPrice).toLocaleString()}
+                            </Typography>
                             <Chip
-                              key={index}
-                              label={item}
+                              label={`${bestDiscount.discountRate}% 할인!`}
                               size="small"
+                              color="error"
                               variant="filled"
-                              color="primary"
-                              sx={{ fontSize: '0.75rem' }}
                             />
-                          ))}
-                        </Stack>
-                      </Paper>
-                    </Box>
-                  </Grid>
-                </Grid>
+                          </Stack>
+                        ) : (
+                          <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
+                            ₩ {selectedSchedule.price.toLocaleString()}
+                          </Typography>
+                        );
+                      })()}
+                    </Paper>
+
+                    {/* 차시별 교육 커리큘럼 */}
+                    <Paper sx={{ p: 2, mb: 3, backgroundColor: '#fff3e0', borderRadius: 2 }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 2, display: 'flex', alignItems: 'center' }}>
+                        <MenuBook sx={{ fontSize: 18, mr: 1, color: '#ff9800' }} />
+                        차시별 교육 커리큘럼
+                      </Typography>
+                      {selectedSchedule.lessonPlans.map((lesson, index) => (
+                        <Box key={index} sx={{ mb: 2, p: 2, backgroundColor: 'white', borderRadius: 1, border: '1px solid #ffcc02' }}>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                            <Box sx={{ flex: 1 }}>
+                              <Typography variant="body2" sx={{ fontWeight: 'bold', color: '#e65100', mb: 1 }}>
+                                {lesson.session}차시: {lesson.title} ({lesson.duration})
+                              </Typography>
+                              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                {lesson.objectives.map((objective, objIndex) => (
+                                  <Chip
+                                    key={objIndex}
+                                    label={objective}
+                                    size="small"
+                                    variant="outlined"
+                                    color="warning"
+                                    sx={{ fontSize: '0.7rem', height: 20 }}
+                                  />
+                                ))}
+                              </Box>
+                            </Box>
+                            
+                            {/* 미리보기 버튼 */}
+                            {lesson.previewVideoUrl && (
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                startIcon={<PlayCircleOutline />}
+                                onClick={() => handleCurriculumVideoOpen(lesson.previewVideoUrl!, lesson.title)}
+                                sx={{
+                                  ml: 2,
+                                  borderColor: '#ff9800',
+                                  color: '#ff9800',
+                                  fontWeight: 'bold',
+                                  fontSize: '0.75rem',
+                                  minWidth: 'auto',
+                                  px: 1.5,
+                                  py: 0.5,
+                                  '&:hover': {
+                                    backgroundColor: '#fff3e0',
+                                    borderColor: '#f57c00',
+                                    color: '#f57c00',
+                                    transform: 'scale(1.05)'
+                                  },
+                                  transition: 'all 0.2s ease'
+                                }}
+                              >
+                                미리보기
+                              </Button>
+                            )}
+                          </Box>
+                        </Box>
+                      ))}
+                    </Paper>
+
+                    {/* 준비 교구재 */}
+                    <Paper sx={{ p: 2, backgroundColor: '#e3f2fd', borderRadius: 2 }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1, display: 'flex', alignItems: 'center' }}>
+                        <Build sx={{ fontSize: 18, mr: 1, color: '#1976d2' }} />
+                        준비 교구재
+                      </Typography>
+                      <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                        {selectedSchedule.equipment?.map((item, index) => (
+                          <Chip
+                            key={index}
+                            label={item}
+                            size="small"
+                            variant="filled"
+                            color="primary"
+                            sx={{ fontSize: '0.75rem' }}
+                          />
+                        ))}
+                      </Stack>
+                    </Paper>
+                  </Box>
+                </Box>
 
                 {/* 하단: 수강생 후기 섹션 */}
                 <Box sx={{ p: 3, backgroundColor: '#f5f5f5', borderTop: '1px solid #e0e0e0' }}>
@@ -2319,9 +2415,9 @@ export default function EducationSchedulePage() {
                   </Box>
 
                   {selectedSchedule.reviews && selectedSchedule.reviews.length > 0 ? (
-                    <Grid container spacing={2}>
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
                       {selectedSchedule.reviews.slice(0, 4).map((review) => (
-                        <Grid item xs={12} md={6} key={review.id}>
+                        <Box key={review.id} sx={{ width: 'calc(50% - 8px)' }}>
                           <Paper sx={{ p: 2, backgroundColor: 'white', borderRadius: 2, border: '1px solid #e0e0e0' }}>
                             <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                               <Avatar 
@@ -2346,9 +2442,9 @@ export default function EducationSchedulePage() {
                               {review.comment}
                             </Typography>
                           </Paper>
-                        </Grid>
+                        </Box>
                       ))}
-                    </Grid>
+                    </Box>
                   ) : (
                     <Paper sx={{ p: 3, textAlign: 'center', backgroundColor: 'white' }}>
                       <Typography variant="body2" color="text.secondary">
@@ -2503,56 +2599,6 @@ export default function EducationSchedulePage() {
           </DialogActions>
         </Dialog>
 
-        {/* 동영상 미리보기 다이얼로그 */}
-        <Dialog 
-          open={videoDialog} 
-          onClose={handleVideoClose} 
-          maxWidth="md" 
-          fullWidth
-          PaperProps={{
-            sx: { 
-              backgroundColor: '#000',
-              borderRadius: 2,
-              overflow: 'hidden'
-            }
-          }}
-        >
-          <DialogTitle sx={{ color: 'white', textAlign: 'center' }}>
-            교육 소개 영상
-          </DialogTitle>
-          <DialogContent sx={{ p: 0, backgroundColor: '#000' }}>
-            <Box sx={{ position: 'relative', paddingBottom: '56.25%', height: 0 }}>
-              <iframe
-                src={selectedVideo}
-                style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  width: '100%',
-                  height: '100%',
-                  border: 'none'
-                }}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                title="교육 소개 영상"
-              />
-            </Box>
-          </DialogContent>
-          <DialogActions sx={{ backgroundColor: '#000' }}>
-            <Button 
-              onClick={handleVideoClose} 
-              sx={{ 
-                color: 'white',
-                '&:hover': {
-                  backgroundColor: 'rgba(255, 255, 255, 0.1)'
-                }
-              }}
-            >
-              닫기
-            </Button>
-          </DialogActions>
-        </Dialog>
-
         {/* 커리큘럼 동영상 다이얼로그 */}
         <Dialog 
           open={curriculumVideoDialog} 
@@ -2642,6 +2688,18 @@ export default function EducationSchedulePage() {
           {snackbar.message}
         </Alert>
       </Snackbar>
+
+      {/* 로그인 다이얼로그 */}
+      <LoginDialog
+        open={openLoginDialog}
+        onClose={handleLoginClose}
+        loginData={loginData}
+        error={loginError}
+        onInputChange={handleLoginInputChange}
+        onLogin={handleLogin}
+        onRegisterClick={handleRegisterClick}
+        setError={setLoginError}
+      />
     </>
   );
 } 
