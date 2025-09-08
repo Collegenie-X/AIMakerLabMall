@@ -14,23 +14,60 @@ pnpm dev
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+server {
+        listen 80;
+        server_name aimakerlab.com www.aimakerlab.com;
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+        location / {
 
-## Learn More
 
-To learn more about Next.js, take a look at the following resources:
+         proxy_pass http://127.0.0.1:3000;
+         proxy_http_version 1.1;
+         proxy_set_header Upgrade $http_upgrade;
+         proxy_set_header Connection "upgrade";
+         proxy_set_header Host $host;
+         proxy_cache_bypass $http_upgrade;
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+        }
+ }
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-## Deploy on Vercel
+sudo apt install nginx -y
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+sudo systemctl enable nginx
+sudo systemctl start nginx
+sudo systemctl reload nginx
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+
+sudo service restart nginx  
+
+
+### 자동 실행
+> sudo systemctl daemon-reload
+> sudo systemctl enable myapp   # 부팅 시 자동 시작
+> sudo systemctl start  myapp   # 즉시 실행
+
+======================= /etc/systemd/system/myapp.service ==============
+
+[Unit]
+Description=My Node.js Dev Server
+After=network.target
+
+[Service]
+User=ubuntu
+WorkingDirectory=/home/ubuntu/front/front
+# npm 대신 직접 node 명령어도 가능합니다. 예: ExecStart=/usr/bin/node index.js
+ExecStart=/usr/bin/npm run dev
+Restart=always
+Environment=NODE_ENV=development
+# 필요한 경우 PATH 지정
+Environment=PATH=/usr/bin:/usr/local/bin
+# 로그 남기려면
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=myapp
+
+[Install]
+WantedBy=multi-user.target
