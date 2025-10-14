@@ -1416,7 +1416,7 @@ export default function EducationSchedulePage() {
           <Typography variant="h3" component="h1" gutterBottom sx={{ fontWeight: 'bold', color: '#1976d2' }}>
             교육 일정
           </Typography>
-          <Typography variant="h6" color="text.secondary" sx={{ maxWidth: 600, mx: 'auto' }}>
+          <Typography variant="h7" color="text.secondary" sx={{ mx: 'auto' }}>
             다양한 AI와 메이커 교육 프로그램의 일정을 확인하고 
             참여하고 싶은 교육에 신청해보세요.
           </Typography>
@@ -1424,10 +1424,7 @@ export default function EducationSchedulePage() {
 
         {/* 카테고리 필터 */}
         <Box sx={{ mb: 4 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-            <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
-              교육 분야
-            </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', mb: 2 }}>
             <Button
               variant="outlined"
               onClick={handleMoveToContact}
