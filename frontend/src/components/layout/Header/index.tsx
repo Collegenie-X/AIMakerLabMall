@@ -7,7 +7,10 @@ import {
   Box,
   Container,
   Stack,
+  IconButton,
+  Button
 } from '@mui/material';
+import MenuIcon from '@mui/icons-material/Menu';
 
 import Logo from './Logo';
 import MenuItem from './MenuItem';
@@ -15,6 +18,7 @@ import LoginDialog from './LoginDialog';
 import RegisterDialog from './RegisterDialog';
 import UserMenu from './UserMenu';
 import { useUser } from '@/contexts/UserContext';
+import MobileNavDrawer from './MobileNavDrawer';
 
 /**
  * 메뉴 데이터 정의
@@ -69,6 +73,8 @@ export default function Header() {
   const [anchorEls, setAnchorEls] = useState<(HTMLElement | null)[]>(new Array(menuItems.length).fill(null));
   const [openLoginDialog, setOpenLoginDialog] = useState(false);
   const [openRegisterDialog, setOpenRegisterDialog] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [loginData, setLoginData] = useState({
     email: '',
     password: ''
@@ -90,6 +96,19 @@ export default function Header() {
     document.addEventListener('keydown', handleEscKey);
     return () => document.removeEventListener('keydown', handleEscKey);
   }, [openMenuIndex]);
+
+  /**
+   * 스크롤 위치에 따른 하단선/그림자 토글
+   */
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 0);
+    };
+
+    handleScroll();
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   /**
    * 로그인 입력 필드 변경 핸들러
@@ -234,12 +253,18 @@ export default function Header() {
     setAnchorEls(new Array(menuItems.length).fill(null));
   };
 
+  /**
+   * 모바일 서랍 열기/닫기 핸들러
+   */
+  const openMobileDrawer = () => setIsMobileDrawerOpen(true);
+  const closeMobileDrawer = () => setIsMobileDrawerOpen(false);
+
   return (
     <>
       <AppBar 
         position="fixed" 
         color="default" 
-        elevation={1} 
+        elevation={isScrolled ? 1 : 0} 
         sx={{ 
           position: 'fixed',
           top: 0,
@@ -247,14 +272,24 @@ export default function Header() {
           right: 0,
           zIndex: 1100,
           backgroundColor: '#fff',
-          borderBottom: '1px solid #e0e0e0'
+          borderBottom: isScrolled ? '1px solid #e0e0e0' : 'none'
         }}
       >
         <Container maxWidth="lg">
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 2 }}>
-            <Logo />
+            {/* 모바일: 좌측 햄버거 + 로고 */}
+            <Box sx={{ display: { xs: 'flex', md: 'none' }, alignItems: 'center', width: '100%', justifyContent: 'space-between' }}>
+              <IconButton aria-label="open menu" onClick={openMobileDrawer} edge="start">
+                <MenuIcon />
+              </IconButton>
+              <Logo />
+              <Box sx={{ width: 48 }} />
+            </Box>
 
-            <Stack direction="row" spacing={10}>
+            {/* 데스크톱: 기존 메뉴 */}
+            <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', width: '100%', justifyContent: 'space-between' }}>
+              <Logo />
+              <Stack direction="row" spacing={10}>
               {menuItems.map((menu, index) => (
                 <MenuItem 
                   key={index}
@@ -286,7 +321,8 @@ export default function Header() {
                   로그인
                 </Box>
               )}
-            </Stack>
+              </Stack>
+            </Box>
           </Box>
         </Container>
       </AppBar>
@@ -309,6 +345,21 @@ export default function Header() {
         open={openRegisterDialog}
         onClose={handleRegisterClose}
         error={registerError}
+      />
+
+      {/* 모바일 서랍 메뉴 */}
+      <MobileNavDrawer
+        anchor="left"
+        open={isMobileDrawerOpen}
+        onOpen={openMobileDrawer}
+        onClose={closeMobileDrawer}
+        menuItems={menuItems}
+        header={<Logo />}
+        footer={userName ? (
+          <Button fullWidth variant="outlined" onClick={handleLogout}>로그아웃</Button>
+        ) : (
+          <Button fullWidth variant="contained" onClick={handleLoginClick}>로그인</Button>
+        )}
       />
     </>
   );

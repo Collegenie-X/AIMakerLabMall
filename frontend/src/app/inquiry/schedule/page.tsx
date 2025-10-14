@@ -1487,19 +1487,27 @@ export default function EducationSchedulePage() {
           sx={{ 
             display: 'flex',
             flexWrap: 'wrap',
-            gap: 3,
-            justifyContent: 'center'
+            gap: 4,            
+            justifyContent: { xs: 'center', md: 'space-between' }
           }}
         >
           {filteredSchedules.map((schedule, index) => {
             const { originalPrice, discountedPrice, bestDiscount } = calculateDiscountPrice(schedule);
             
             return (
-              <Box key={schedule.id} sx={{ flex: '0 0 auto' }}>
+              <Box 
+                key={schedule.id} 
+                sx={{ 
+                  flex: { xs: '1 1 100%', sm: '0 0 auto' },
+                  maxWidth: { xs: '100%', sm: 340 },
+                  display: 'flex',
+                  justifyContent: 'center'
+                }}
+              >
                 <Card 
                   sx={{ 
-                    width: 320,
-                    height: 400,
+                    width: { xs: 320, sm: 340 },
+                    height: 380,
                     display: 'flex',
                     flexDirection: 'column',
                     transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
@@ -1507,7 +1515,7 @@ export default function EducationSchedulePage() {
                     border: '1px solid #e0e0e0',
                     borderRadius: 2,
                     overflow: 'hidden',
-                    margin: '0 auto',
+                    margin: 0,
                     '&:hover': {
                       transform: 'translateY(-4px)',
                       boxShadow: '0 12px 24px rgba(0,0,0,0.15)',
